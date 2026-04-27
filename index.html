@@ -1072,6 +1072,11 @@
             <div class="si-lbl">CSVエクスポート</div>
             <div class="si-arrow">›</div>
           </div>
+          <div class="si" onclick="confirmLoadDemo()">
+            <div class="si-icon" style="background:#FFF3E5">🧪</div>
+            <div class="si-lbl">デモデータを登録</div>
+            <div class="si-arrow">›</div>
+          </div>
           <div class="si">
             <div class="si-icon" style="background:#E5F0FF">☁️</div>
             <div class="si-lbl">iCloudバックアップ</div>
@@ -1254,6 +1259,35 @@
       </div>
     </div>
   </div>
+
+  <!-- ════ MEMO INPUT SHEET ════ -->
+  <div class="overlay" id="memo-sheet-overlay" onclick="closeMemoSheet(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">メモを追加</div>
+      <input class="edit-field" id="memo-sheet-input"
+        type="text" placeholder="メモ（省略可）" maxlength="50"
+        style="margin-bottom:16px"
+        onkeydown="if(event.key==='Enter')saveMemoSheet()">
+      <div class="sheet-actions">
+        <button class="sa-btn sa-primary" onclick="saveMemoSheet()">OK</button>
+        <button class="sa-btn sa-cancel"  onclick="closeMemoSheet()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CONFIRM SHEET ════ -->
+  <div class="overlay" id="confirm-overlay" onclick="closeConfirmSheet(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="confirm-title"></div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:16px" id="confirm-body"></div>
+      <div class="sheet-actions">
+        <button class="sa-btn sa-danger" id="confirm-ok-btn" onclick="_confirmOK()">実行する</button>
+        <button class="sa-btn sa-cancel" onclick="closeConfirmSheet()">キャンセル</button>
+      </div>
+    </div>
+  </div>
 </div><!-- /frame -->
 
 <script>
@@ -1312,14 +1346,14 @@ const SEED_TXNS = [
 function loadTxns() {
   try {
     const saved = localStorage.getItem('kakebo_txns');
-    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(SEED_TXNS));
-  } catch { return JSON.parse(JSON.stringify(SEED_TXNS)); }
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
 }
 function saveTxns() {
   try { localStorage.setItem('kakebo_txns', JSON.stringify(txns)); } catch {}
 }
 function loadNextId() {
-  return parseInt(localStorage.getItem('kakebo_next_id') || '26', 10);
+  return parseInt(localStorage.getItem('kakebo_next_id') || '1', 10);
 }
 function saveNextId() {
   try { localStorage.setItem('kakebo_next_id', String(nextId)); } catch {}
@@ -1437,13 +1471,21 @@ function needCat() {
 
 // ─────────── MEMO ───────────
 function editMemo() {
-  const m = prompt('メモを入力（省略可）', curMemo);
-  if (m !== null) {
-    curMemo = m;
-    const h = document.getElementById('memo-hint');
-    h.textContent = curMemo || 'メモを追加...';
-    h.className   = 'memo-hint' + (curMemo ? ' filled' : '');
-  }
+  const input = document.getElementById('memo-sheet-input');
+  input.value = curMemo;
+  document.getElementById('memo-sheet-overlay').classList.add('show');
+  setTimeout(() => input.focus(), 150);
+}
+function saveMemoSheet() {
+  curMemo = document.getElementById('memo-sheet-input').value;
+  const h = document.getElementById('memo-hint');
+  h.textContent = curMemo || 'メモを追加...';
+  h.className   = 'memo-hint' + (curMemo ? ' filled' : '');
+  closeMemoSheet();
+}
+function closeMemoSheet(e) {
+  if (!e || e.target === document.getElementById('memo-sheet-overlay'))
+    document.getElementById('memo-sheet-overlay').classList.remove('show');
 }
 
 // ─────────── REGISTER ───────────
@@ -2063,6 +2105,43 @@ function exportCSV(mode) {
   downloadCSV(filename, buildCSV(list));
   closeCSVSheet();
   toast(`${list.length}件をエクスポートしました`);
+}
+
+// ─────────── DEMO DATA ───────────
+function confirmLoadDemo() {
+  if (txns.length > 0) {
+    showConfirm(
+      'デモデータを登録',
+      '既存のデータをすべて削除してデモデータを登録します。よろしいですか？',
+      loadDemoData
+    );
+  } else {
+    loadDemoData();
+  }
+}
+function loadDemoData() {
+  txns   = JSON.parse(JSON.stringify(SEED_TXNS));
+  nextId = 26;
+  saveTxns(); saveNextId();
+  renderHist();
+  toast('デモデータを登録しました');
+}
+
+// ─────────── CONFIRM SHEET ───────────
+let _confirmCallback = null;
+function showConfirm(title, body, onOK) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-body').textContent  = body;
+  _confirmCallback = onOK;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function _confirmOK() {
+  closeConfirmSheet();
+  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+}
+function closeConfirmSheet(e) {
+  if (!e || e.target === document.getElementById('confirm-overlay'))
+    document.getElementById('confirm-overlay').classList.remove('show');
 }
 
 // ─────────── STATS ───────────

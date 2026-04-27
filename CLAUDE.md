@@ -34,3 +34,6 @@ SPEC.md      # 機能仕様書
 DESIGN.md    # 技術設計書
 PROGRESS.md  # 開発進捗
 ```
+
+## 禁止事項
+README.md,SPEC.md,DESIGN.md に今後の課題や残作業を含めないこと。それらはPROGRESS.md にまとめて記載すること

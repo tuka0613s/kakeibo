@@ -116,7 +116,9 @@ kakeibo/
 ├── #cat-mgmt-overlay    (z: 400)  カテゴリ管理
 ├── #cat-edit-overlay    (z: 500)  カテゴリ追加・編集シート
 ├── #budget-edit-overlay           予算・初期残高入力（3モード共用）
-└── #csv-export-overlay            CSVエクスポート選択シート
+├── #csv-export-overlay            CSVエクスポート選択シート
+├── #memo-sheet-overlay            メモ入力シート（prompt() の代替）
+└── #confirm-overlay               汎用確認シート（sa-dangerボタン＋コールバック）
 ```
 
 ### レイアウト切り替えの仕組み
@@ -204,6 +206,11 @@ kakeibo/
 | `checkBudgetAlert()` | 登録後に予算閾値チェックしてトースト表示 |
 | `exportCSV(mode)` | `'month'` or `'all'` で BOM 付き CSV をダウンロード |
 | `openCatMgmt()` | カテゴリ管理画面を開く |
+| `editMemo()` | メモシートを開く（`#memo-sheet-overlay`） |
+| `saveMemoSheet()` | メモシートの値を `curMemo` に反映して閉じる |
+| `confirmLoadDemo()` | 既存データがあれば確認シート経由、なければ即デモデータ登録 |
+| `loadDemoData()` | SEED_TXNS を txns に設定して localStorage 保存・描画更新 |
+| `showConfirm(title, body, onOK)` | 汎用確認シートを開く。OK 押下で `onOK` コールバックを実行 |
 | `toast(msg)` | トースト通知を2.2秒表示 |
 
 ---
@@ -219,16 +226,3 @@ kakeibo/
 キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
 更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。
 
----
-
-## 今後の課題
-
-| 優先度 | テーマ | 対応方針 |
-|---|---|---|
-| 高 | PWA アイコン（192px・512px） | Canvas で SVG → PNG 変換、または画像ファイルを手動作成 |
-| 高 | メモ入力カスタムシート | prompt() を廃止し、bottom sheet + テキスト入力に置換 |
-| 中 | 固定費自動登録 | 月初起動時に txns へ自動追加する処理 |
-| 低 | 年次統計 | getLast12Months() を追加し、統計画面の年次タブを実装 |
-| 低 | JSON バックアップ | txns を JSON ファイルとしてダウンロード |
-| 将来 | iCloud 同期 | iOS Safari の File API 経由で JSON 共有 |
-| 将来 | Web Push 通知 | 予算超過時の Push 通知（iOS 16.4+） |
