@@ -510,7 +510,7 @@
     /* stats year nav */
     .stats-year-nav { display: none; align-items: center; justify-content: center; gap: 20px; margin-top: 6px; }
     .stats-year-nav.show { display: flex; }
-    .year-nav-btn { background: var(--sep); border: none; border-radius: 8px; padding: 4px 14px; font-size: 18px; cursor: pointer; color: var(--text1); -webkit-tap-highlight-color: transparent; }
+    .year-nav-btn { background: var(--sep); border: none; border-radius: 10px; padding: 10px 24px; font-size: 22px; min-height: 48px; cursor: pointer; color: var(--text1); -webkit-tap-highlight-color: transparent; }
     .year-nav-lbl { font-size: 16px; font-weight: 700; color: var(--text1); min-width: 64px; text-align: center; }
 
     /* category detail overlay */
@@ -518,6 +518,14 @@
     #cat-detail-overlay { z-index: 405; }
     .cat-detail-scroll { flex: 1; overflow-y: auto; padding: 8px 16px 16px; min-height: 0; }
     .cat-detail-scroll::-webkit-scrollbar { display: none; }
+
+    /* disabled settings item */
+    .si-disabled { opacity: 0.4; pointer-events: none; }
+
+    /* sort buttons in category detail */
+    .sort-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .sort-btn { flex: 1; padding: 6px 4px; border: 1.5px solid var(--sep); border-radius: 8px; background: var(--card); font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .sort-btn.active { border-color: var(--primary); color: var(--primary); background: #F0EFFF; }
 
     /* legend */
     .legend { display: flex; gap: 16px; justify-content: flex-end; margin-bottom: 8px; }
@@ -1097,7 +1105,7 @@
 
         <div class="sg-title">定期支出</div>
         <div class="sg">
-          <div class="si">
+          <div class="si si-disabled">
             <div class="si-icon" style="background:#F0E5FF">🔄</div>
             <div class="si-lbl">固定費を設定</div>
             <div class="si-arrow">›</div>
@@ -1108,7 +1116,7 @@
         <div class="sg">
           <div class="si" onclick="openCSVSheet()">
             <div class="si-icon" style="background:#E5FFF8">📤</div>
-            <div class="si-lbl">CSVエクスポート</div>
+            <div class="si-lbl">CSV エクスポート / インポート</div>
             <div class="si-arrow">›</div>
           </div>
           <div class="si" onclick="confirmLoadDemo()">
@@ -1121,10 +1129,10 @@
             <div class="si-lbl" style="color:var(--expense)">全データを消去</div>
             <div class="si-arrow" style="color:var(--expense)">›</div>
           </div>
-          <div class="si">
+          <div class="si si-disabled">
             <div class="si-icon" style="background:#E5F0FF">☁️</div>
             <div class="si-lbl">iCloudバックアップ</div>
-            <div class="si-val">オン</div>
+            <div class="si-val">近日公開</div>
             <div class="si-arrow">›</div>
           </div>
         </div>
@@ -1326,20 +1334,27 @@
       </div>
       <div class="stat-card">
         <div class="stat-ttl">取引履歴</div>
+        <div class="sort-row">
+          <button class="sort-btn active" id="sort-btn-date" onclick="setCatSort('date')">日付順</button>
+          <button class="sort-btn" id="sort-btn-amt"  onclick="setCatSort('amt')">金額順</button>
+        </div>
         <div id="cat-detail-list"></div>
       </div>
     </div>
   </div>
 
-  <!-- ════ CSV EXPORT SHEET ════ -->
+  <!-- ════ CSV EXPORT / IMPORT SHEET ════ -->
+  <input type="file" id="csv-import-input" accept=".csv" style="display:none" onchange="importCSV(event)">
   <div class="overlay" id="csv-export-overlay" onclick="closeCSVSheet(event)">
     <div class="sheet" onclick="event.stopPropagation()">
       <div class="sheet-handle"></div>
-      <div class="sheet-title">CSVエクスポート</div>
+      <div class="sheet-title">CSV エクスポート / インポート</div>
       <div class="sheet-actions">
-        <button class="sa-btn sa-primary" id="csv-month-btn" onclick="exportCSV('month')">今月のデータ</button>
+        <button class="sa-btn sa-primary" id="csv-month-btn" onclick="exportCSV('month')">📤 今月のデータ</button>
         <button class="sa-btn" style="background:var(--card);color:var(--text1);border:1.5px solid var(--sep)"
-          onclick="exportCSV('all')">全件データ</button>
+          onclick="exportCSV('all')">📤 全件データ</button>
+        <button class="sa-btn" style="background:var(--card);color:var(--primary);border:1.5px solid var(--primary)"
+          onclick="triggerCSVImport()">📥 CSVを読み込む</button>
         <button class="sa-btn sa-cancel" onclick="closeCSVSheet()">キャンセル</button>
       </div>
     </div>
@@ -2188,6 +2203,65 @@ function exportCSV(mode) {
   toast(`${list.length}件をエクスポートしました`);
 }
 
+// ─────────── CSV IMPORT ───────────
+function triggerCSVImport() {
+  document.getElementById('csv-import-input').value = '';
+  document.getElementById('csv-import-input').click();
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      result.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    let text = e.target.result;
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) { toast('ファイルが空です'); return; }
+    const header = lines[0];
+    if (!header.startsWith('日付,種別')) { toast('フォーマットが一致しません'); return; }
+    let added = 0, skipped = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      if (cols.length < 4) { skipped++; continue; }
+      const [date, typeStr, cat, amtStr, memo = ''] = cols;
+      const amt = parseInt(amtStr, 10);
+      if (!date.match(/^\d{4}-\d{2}-\d{2}$/) || isNaN(amt) || amt <= 0) { skipped++; continue; }
+      const type = typeStr === '収入' ? 'income' : 'expense';
+      const allCats = [...loadCats('expense'), ...loadCats('income')];
+      const found = allCats.find(c => c.name === cat);
+      const emoji = found ? found.emoji : '📝';
+      txns.push({ id: nextId++, type, cat, emoji, amt, date, memo });
+      added++;
+    }
+    saveTxns(); saveNextId();
+    renderHist(); renderCalendar();
+    renderStatsSummary(); renderBarChart(); renderCatBars();
+    renderBudgetBar();
+    closeCSVSheet();
+    toast(`${added}件をインポートしました${skipped ? `（${skipped}件スキップ）` : ''}`);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
 // ─────────── DEMO DATA ───────────
 function confirmLoadDemo() {
   if (txns.length > 0) {
@@ -2409,13 +2483,21 @@ function renderCatBars() {
 }
 
 // ─────────── CATEGORY DETAIL ───────────
-let catDetailName = '', catDetailEmoji = '';
+let catDetailName = '', catDetailEmoji = '', catDetailSort = 'date';
 
 function openCatDetail(el) {
   catDetailName  = el.dataset.cat;
   catDetailEmoji = el.dataset.emoji;
+  catDetailSort  = 'date';
   document.getElementById('cat-detail-title').textContent = `${catDetailEmoji} ${catDetailName}`;
   document.getElementById('cat-detail-overlay').classList.add('show');
+  renderCatDetail();
+}
+
+function setCatSort(sort) {
+  catDetailSort = sort;
+  document.getElementById('sort-btn-date').classList.toggle('active', sort === 'date');
+  document.getElementById('sort-btn-amt').classList.toggle('active', sort === 'amt');
   renderCatDetail();
 }
 
@@ -2426,6 +2508,7 @@ function closeCatDetail() {
 function renderCatDetail() {
   const name = catDetailName;
   let bars, chartTitle, sumTitle;
+  const monthPrefix = `${statsYear}-${String(statsMonth).padStart(2,'0')}`;
   if (statsPeriod === 'monthly') {
     bars = getMonthRange(statsYear, statsMonth, 6).map(({ y, m }) => {
       const prefix = `${y}-${String(m).padStart(2,'0')}`;
@@ -2433,7 +2516,7 @@ function renderCatDetail() {
       return { label: m + '月', amt };
     });
     chartTitle = '月次推移（直近6ヶ月）';
-    sumTitle   = `${statsYear}年${statsMonth}月 周辺6ヶ月`;
+    sumTitle   = `${statsYear}年${statsMonth}月`;
   } else {
     bars = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
@@ -2449,7 +2532,7 @@ function renderCatDetail() {
   const avg     = nonzero > 0 ? Math.round(total / nonzero) : 0;
 
   const filtered = statsPeriod === 'monthly'
-    ? txns.filter(t => t.cat === name && getMonthRange(statsYear, statsMonth, 6).some(({y,m}) => t.date.startsWith(`${y}-${String(m).padStart(2,'0')}`)))
+    ? txns.filter(t => t.cat === name && t.date.startsWith(monthPrefix))
     : txns.filter(t => t.cat === name && t.date.startsWith(`${statsYear}-`));
 
   document.getElementById('cat-detail-sum-ttl').textContent   = sumTitle + ' サマリー';
@@ -2466,7 +2549,10 @@ function renderCatDetail() {
     </div>
   `).join('');
 
-  const recent = [...filtered].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 30);
+  const sorted = catDetailSort === 'amt'
+    ? [...filtered].sort((a,b) => b.amt - a.amt)
+    : [...filtered].sort((a,b) => b.date.localeCompare(a.date));
+  const recent = sorted.slice(0, 30);
   document.getElementById('cat-detail-list').innerHTML = recent.length
     ? recent.map(t => histRow(t)).join('')
     : '<div style="color:var(--text2);font-size:13px;text-align:center;padding:8px">データがありません</div>';
