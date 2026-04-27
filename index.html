@@ -1111,6 +1111,11 @@
             <div class="si-lbl">デモデータを登録</div>
             <div class="si-arrow">›</div>
           </div>
+          <div class="si" onclick="confirmClearAll()">
+            <div class="si-icon" style="background:#FFE5E5">🗑️</div>
+            <div class="si-lbl" style="color:var(--expense)">全データを消去</div>
+            <div class="si-arrow" style="color:var(--expense)">›</div>
+          </div>
           <div class="si">
             <div class="si-icon" style="background:#E5F0FF">☁️</div>
             <div class="si-lbl">iCloudバックアップ</div>
@@ -2188,6 +2193,22 @@ function confirmLoadDemo() {
   } else {
     loadDemoData();
   }
+}
+
+function confirmClearAll() {
+  showConfirm(
+    '全データを消去',
+    'すべての取引データを削除します。この操作は元に戻せません。',
+    clearAllData
+  );
+}
+function clearAllData() {
+  txns = []; nextId = 1;
+  saveTxns(); saveNextId();
+  renderHist(); renderCalendar();
+  renderStatsSummary(); renderBarChart(); renderCatBars();
+  renderBudgetBar();
+  toast('データを消去しました');
 }
 function loadDemoData() {
   txns   = JSON.parse(JSON.stringify(SEED_TXNS));
