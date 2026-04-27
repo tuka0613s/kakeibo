@@ -672,12 +672,11 @@
       padding: 8px 16px;
     }
     .edit-yen { font-size: 22px; font-weight: 300; color: var(--text2); }
-    .edit-amt-input {
-      flex: 1; border: none; background: none;
-      font-size: 38px; font-weight: 200; color: var(--primary);
-      outline: none; letter-spacing: -2px;
+    .edit-amt-display {
+      flex: 1; font-size: 38px; font-weight: 200;
+      color: var(--primary); letter-spacing: -2px; line-height: 1;
     }
-    .edit-amt-input::placeholder { color: var(--sep); }
+    .edit-amt-display.dim { color: var(--sep); }
 
     .edit-cat-grid {
       display: grid; grid-template-columns: repeat(4,1fr);
@@ -939,19 +938,19 @@
       <div class="stats-scroll">
         <!-- summary -->
         <div class="stat-card">
-          <div class="stat-ttl">2026年4月 サマリー</div>
+          <div class="stat-ttl" id="stats-ttl">— サマリー</div>
           <div class="summary-row">
             <div class="sum-item">
               <div class="sum-lbl">収入</div>
-              <div class="sum-val" style="color:var(--income)">¥280,000</div>
+              <div class="sum-val" id="stats-inc" style="color:var(--income)">¥—</div>
             </div>
             <div class="sum-item">
               <div class="sum-lbl">支出</div>
-              <div class="sum-val" style="color:var(--expense)">¥127,480</div>
+              <div class="sum-val" id="stats-exp" style="color:var(--expense)">¥—</div>
             </div>
             <div class="sum-item">
               <div class="sum-lbl">貯蓄</div>
-              <div class="sum-val" style="color:var(--primary)">¥152,520</div>
+              <div class="sum-val" id="stats-sav" style="color:var(--primary)">¥—</div>
             </div>
           </div>
         </div>
@@ -972,16 +971,16 @@
           <div class="cat-bars" id="cat-bars"></div>
         </div>
 
-        <!-- running balance -->
+        <!-- savings rate -->
         <div class="stat-card">
           <div class="stat-ttl">月次貯蓄率</div>
           <div style="display:flex;align-items:center;gap:12px">
             <div style="flex:1;height:14px;background:var(--sep);border-radius:7px;overflow:hidden">
-              <div style="width:54%;height:100%;background:var(--primary);border-radius:7px"></div>
+              <div id="stats-savbar" style="width:0%;height:100%;background:var(--primary);border-radius:7px;transition:width .4s"></div>
             </div>
-            <div style="font-size:18px;font-weight:700;color:var(--primary)">54%</div>
+            <div id="stats-savpct" style="font-size:18px;font-weight:700;color:var(--primary)">0%</div>
           </div>
-          <div style="font-size:12px;color:var(--text2);margin-top:6px">目標 30% を達成中</div>
+          <div id="stats-savlbl" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
         </div>
       </div>
     </div>
@@ -1023,6 +1022,16 @@
           </div>
         </div>
 
+        <div class="sg-title">残高</div>
+        <div class="sg">
+          <div class="si" onclick="openBudgetEdit('initial')">
+            <div class="si-icon" style="background:#E5EEFF">💳</div>
+            <div class="si-lbl">初期残高</div>
+            <div class="si-val" id="si-balance-val">¥0</div>
+            <div class="si-arrow">›</div>
+          </div>
+        </div>
+
         <div class="sg-title">定期支出</div>
         <div class="sg">
           <div class="si">
@@ -1034,7 +1043,7 @@
 
         <div class="sg-title">データ</div>
         <div class="sg">
-          <div class="si">
+          <div class="si" onclick="openCSVSheet()">
             <div class="si-icon" style="background:#E5FFF8">📤</div>
             <div class="si-lbl">CSVエクスポート</div>
             <div class="si-arrow">›</div>
@@ -1104,8 +1113,27 @@
         <div class="edit-lbl">金額</div>
         <div class="edit-amount-card">
           <span class="edit-yen">¥</span>
-          <input class="edit-amt-input" id="edit-amt"
-            type="number" inputmode="decimal" placeholder="0" min="0">
+          <span class="edit-amt-display dim" id="edit-amt-disp">0</span>
+        </div>
+      </div>
+
+      <!-- テンキー -->
+      <div class="edit-sec" style="margin:0 -16px">
+        <div class="numpad" style="border-radius:0">
+          <div class="numpad-grid">
+            <button class="nk d" onclick="editNk('7')">7</button>
+            <button class="nk d" onclick="editNk('8')">8</button>
+            <button class="nk d" onclick="editNk('9')">9</button>
+            <button class="nk a" onclick="editBack()">⌫</button>
+            <button class="nk d" onclick="editNk('4')">4</button>
+            <button class="nk d" onclick="editNk('5')">5</button>
+            <button class="nk d" onclick="editNk('6')">6</button>
+            <button class="nk a" onclick="editClearAmt()">C</button>
+            <button class="nk d" onclick="editNk('1')">1</button>
+            <button class="nk d" onclick="editNk('2')">2</button>
+            <button class="nk d" onclick="editNk('3')">3</button>
+            <button class="nk d" onclick="editNk('0')">0</button>
+          </div>
         </div>
       </div>
 
@@ -1186,6 +1214,19 @@
       <div class="sheet-actions">
         <button class="sa-btn sa-primary" onclick="saveBudgetEdit()">保存する</button>
         <button class="sa-btn sa-cancel"  onclick="closeBudgetEdit()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+  <!-- ════ CSV EXPORT SHEET ════ -->
+  <div class="overlay" id="csv-export-overlay" onclick="closeCSVSheet(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">CSVエクスポート</div>
+      <div class="sheet-actions">
+        <button class="sa-btn sa-primary" id="csv-month-btn" onclick="exportCSV('month')">今月のデータ</button>
+        <button class="sa-btn" style="background:var(--card);color:var(--text1);border:1.5px solid var(--sep)"
+          onclick="exportCSV('all')">全件データ</button>
+        <button class="sa-btn sa-cancel" onclick="closeCSVSheet()">キャンセル</button>
       </div>
     </div>
   </div>
@@ -1298,22 +1339,6 @@ function saveCats() {
 let expCats = loadCats('expense');
 let incCats = loadCats('income');
 
-const monthlyData = [
-  {m:'11月', inc:280000, exp:145000},
-  {m:'12月', inc:280000, exp:198000},
-  {m:'1月',  inc:280000, exp:132000},
-  {m:'2月',  inc:280000, exp:118000},
-  {m:'3月',  inc:280000, exp:156000},
-  {m:'4月',  inc:280000, exp:127480},
-];
-const catData = [
-  {emoji:'🏠', name:'家賃',   amt:75000},
-  {emoji:'🍜', name:'食費',   amt:22000},
-  {emoji:'🍽️', name:'外食',   amt:15800},
-  {emoji:'🚃', name:'交通費', amt:8400},
-  {emoji:'📱', name:'通信費', amt:5980},
-  {emoji:'🛒', name:'日用品', amt:4300},
-];
 
 // ─────────── STATE ───────────
 let curType    = 'expense';
@@ -1331,10 +1356,12 @@ function init() {
   renderCalendar();
   renderBarChart();
   renderCatBars();
+  renderStatsSummary();
   renderBudgetBar();
   document.getElementById('si-budget-val').textContent =
     budget.monthly ? `¥${budget.monthly.toLocaleString()}` : '未設定';
   document.getElementById('si-alert-val').textContent = `${budget.alertPct}%`;
+  document.getElementById('si-balance-val').textContent = `¥${initialBalance.toLocaleString()}`;
 }
 
 // ─────────── TYPE TOGGLE ───────────
@@ -1414,6 +1441,9 @@ function register(name, emoji) {
 
   renderHist();
   renderBudgetBar();
+  renderStatsSummary();
+  renderBarChart();
+  renderCatBars();
   toast(`${emoji} ${name} ¥${amt.toLocaleString()} を登録しました`);
   checkBudgetAlert();
 }
@@ -1569,6 +1599,31 @@ function saveCatEdit() {
 // ─────────── TRANSACTION EDIT OVERLAY ───────────
 let editTxn    = null;
 let editSelCat = null;
+let editAmtStr = '';
+
+function updateEditAmt() {
+  const el = document.getElementById('edit-amt-disp');
+  if (!editAmtStr) {
+    el.textContent = '0';
+    el.className = 'edit-amt-display dim';
+  } else {
+    el.textContent = parseInt(editAmtStr, 10).toLocaleString('ja-JP');
+    el.className = 'edit-amt-display';
+  }
+}
+function editNk(v) {
+  if (editAmtStr === '0') editAmtStr = v;
+  else if (editAmtStr.length < 10) editAmtStr += v;
+  updateEditAmt();
+}
+function editBack() {
+  editAmtStr = editAmtStr.slice(0, -1);
+  updateEditAmt();
+}
+function editClearAmt() {
+  editAmtStr = '';
+  updateEditAmt();
+}
 
 function openSheet(id) {          // 履歴・日別詳細から呼ばれる
   const t = txns.find(x => x.id === id);
@@ -1582,7 +1637,8 @@ function openSheet(id) {          // 履歴・日別詳細から呼ばれる
   document.getElementById('edit-btn-inc').className =
     'toggle-btn' + (t.type === 'income'  ? ' on-income'  : '');
 
-  document.getElementById('edit-amt').value  = t.amt;
+  editAmtStr = String(t.amt);
+  updateEditAmt();
   document.getElementById('edit-memo').value = t.memo;
   document.getElementById('edit-date').value = t.date;
 
@@ -1592,7 +1648,7 @@ function openSheet(id) {          // 履歴・日別詳細から呼ばれる
 
 function closeEditOverlay() {
   document.getElementById('edit-overlay').classList.remove('show');
-  editTxn = null; editSelCat = null;
+  editTxn = null; editSelCat = null; editAmtStr = '';
 }
 
 function setEditType(type) {
@@ -1626,8 +1682,8 @@ function selectEditCat(name, emoji) {
 }
 
 function saveEdit() {
-  const amt = parseFloat(document.getElementById('edit-amt').value);
-  if (!amt || isNaN(amt) || amt <= 0) { toast('正しい金額を入力してください'); return; }
+  const amt = parseInt(editAmtStr, 10);
+  if (!editAmtStr || isNaN(amt) || amt <= 0) { toast('正しい金額を入力してください'); return; }
 
   const date = document.getElementById('edit-date').value;
   if (!date) { toast('日付を選択してください'); return; }
@@ -1646,6 +1702,9 @@ function saveEdit() {
   renderHist();
   renderCalendar();
   renderBudgetBar();
+  renderStatsSummary();
+  renderBarChart();
+  renderCatBars();
   closeEditOverlay();
   toast('更新しました');
 }
@@ -1661,7 +1720,32 @@ function deleteAndClose() {
   renderHist();
   renderCalendar();
   renderBudgetBar();
+  renderStatsSummary();
+  renderBarChart();
+  renderCatBars();
   closeEditOverlay();
+}
+
+// ─────────── INITIAL BALANCE ───────────
+function loadInitialBalance() {
+  const v = parseFloat(localStorage.getItem('kakebo_initial_balance'));
+  return isNaN(v) ? 0 : v;
+}
+function saveInitialBalance() {
+  try { localStorage.setItem('kakebo_initial_balance', String(initialBalance)); } catch {}
+}
+
+let initialBalance = loadInitialBalance();
+
+// 指定月の繰越金 = 初期残高 + その月より前の全取引の収支
+function getCarryOver(y, m) {
+  const cutoff = `${y}-${String(m).padStart(2,'0')}`;
+  let bal = initialBalance;
+  txns.forEach(t => {
+    if (t.date.slice(0, 7) < cutoff)
+      bal += t.type === 'income' ? t.amt : -t.amt;
+  });
+  return bal;
 }
 
 // ─────────── BUDGET ───────────
@@ -1709,19 +1793,25 @@ function checkBudgetAlert() {
 
 function openBudgetEdit(mode) {
   budgetEditMode = mode;
-  document.getElementById('budget-edit-title').textContent =
-    mode === 'monthly' ? '月次予算を設定' : '予算アラートの閾値（%）';
+  const titles = {
+    monthly: '月次予算を設定',
+    alert:   '予算アラートの閾値（%）',
+    initial: '初期残高を設定',
+  };
+  document.getElementById('budget-edit-title').textContent = titles[mode];
   const prefix = document.getElementById('budget-edit-prefix');
   const suffix = document.getElementById('budget-edit-suffix');
   const input  = document.getElementById('budget-edit-input');
-  if (mode === 'monthly') {
-    prefix.style.display = ''; suffix.style.display = 'none';
-    input.value = budget.monthly || '';
-    input.placeholder = '200000';
-  } else {
+  if (mode === 'alert') {
     prefix.style.display = 'none'; suffix.style.display = '';
     input.value = budget.alertPct;
     input.placeholder = '80';
+  } else {
+    prefix.style.display = ''; suffix.style.display = 'none';
+    input.value = mode === 'monthly'
+      ? (budget.monthly || '')
+      : (initialBalance || '');
+    input.placeholder = mode === 'monthly' ? '200000' : '0';
   }
   document.getElementById('budget-edit-overlay').classList.add('show');
   setTimeout(() => input.select(), 150);
@@ -1735,30 +1825,30 @@ function closeBudgetEdit(e) {
 function saveBudgetEdit() {
   const val = parseFloat(document.getElementById('budget-edit-input').value);
   if (isNaN(val) || val < 0) { toast('正しい値を入力してください'); return; }
+
   if (budgetEditMode === 'monthly') {
     budget.monthly = val;
     document.getElementById('si-budget-val').textContent =
       val ? `¥${val.toLocaleString()}` : '未設定';
-  } else {
+    saveBudget();
+  } else if (budgetEditMode === 'alert') {
     if (val < 1 || val > 100) { toast('1〜100の値を入力してください'); return; }
     budget.alertPct = val;
     document.getElementById('si-alert-val').textContent = `${val}%`;
+    saveBudget();
+  } else if (budgetEditMode === 'initial') {
+    initialBalance = val;
+    saveInitialBalance();
+    document.getElementById('si-balance-val').textContent = `¥${val.toLocaleString()}`;
+    renderCalendar();
   }
-  saveBudget();
+
   renderBudgetBar();
   closeBudgetEdit();
   toast('保存しました');
 }
 
 // ─────────── CALENDAR ───────────
-
-// 繰越金マップ（前月末残高。将来は txns から自動計算予定）
-const carryOver = {
-  '2026-4': 450000,
-  '2026-3': 298000,
-  '2026-2': 180000,
-  '2026-1': 62000,
-};
 
 // txns から指定年月の日別集計を返す
 function getDayTotals(y, m) {
@@ -1816,6 +1906,7 @@ function renderCalendar() {
 
   document.getElementById('cal-grid').innerHTML = html;
   renderMonthSummary();
+  refreshDailyView();
 }
 
 function renderMonthSummary() {
@@ -1830,7 +1921,7 @@ function renderMonthSummary() {
   });
 
   const net     = totalInc - totalExp;
-  const carry   = carryOver[`${y}-${m}`] ?? 0;
+  const carry   = getCarryOver(y, m);
   const balance = carry + net;
 
   document.getElementById('ms-inc').textContent   = `¥${totalInc.toLocaleString()}`;
@@ -1846,53 +1937,195 @@ function renderMonthSummary() {
   balEl.style.color  = balance >= 0 ? 'var(--primary)' : 'var(--expense)';
 }
 
+function renderMonthTxns() {
+  const y = calYear, m = calMonth;
+  const prefix = `${y}-${String(m).padStart(2,'0')}`;
+  const list = txns
+    .filter(t => t.date.startsWith(prefix))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  const lbl = document.getElementById('daily-lbl');
+  const dl  = document.getElementById('daily-list');
+  lbl.textContent = list.length ? `${m}月の記録（${list.length}件）` : `${m}月の記録`;
+  dl.innerHTML = list.length
+    ? list.map(t => histRow(t)).join('')
+    : '<div class="hist-item" style="color:var(--text2);justify-content:center;font-size:14px">この月の記録はありません</div>';
+}
+
+function refreshDailyView() {
+  if (selDate) {
+    const day = parseInt(selDate.split('-')[2], 10);
+    selectDay(selDate, day);
+  } else {
+    renderMonthTxns();
+  }
+}
+
 function changeMonth(d) {
   calMonth += d;
   if (calMonth > 12) { calMonth = 1;  calYear++; }
   if (calMonth < 1)  { calMonth = 12; calYear--; }
+  selDate = null;
   renderCalendar();
-  selectDay(null, null);
 }
 
 function selectDay(key, day) {
-  selDate = key;
-  const m = calMonth;
-  document.getElementById('daily-lbl').textContent =
-    key ? `${m}月${day}日の記録` : '日付をタップして詳細を表示';
-
-  const dayTxns = key ? txns.filter(t => t.date === key) : [];
-  const dl = document.getElementById('daily-list');
-  if (!key) { dl.innerHTML = ''; return; }
-  if (!dayTxns.length) {
-    dl.innerHTML = '<div class="hist-item" style="color:var(--text2);justify-content:center;font-size:14px">この日の記録はありません</div>';
+  if (selDate === key) {
+    // 同じ日を再タップ → 月全体表示に戻る
+    selDate = null;
+    renderMonthTxns();
     return;
   }
-  dl.innerHTML = dayTxns.map(t => histRow(t)).join('');
+  selDate = key;
+  const m = calMonth;
+  const dl = document.getElementById('daily-list');
+
+  if (!key) { renderMonthTxns(); return; }
+
+  const dayTxns = txns.filter(t => t.date === key);
+  document.getElementById('daily-lbl').textContent =
+    dayTxns.length ? `${m}月${day}日の記録（${dayTxns.length}件）` : `${m}月${day}日の記録`;
+  dl.innerHTML = dayTxns.length
+    ? dayTxns.map(t => histRow(t)).join('')
+    : '<div class="hist-item" style="color:var(--text2);justify-content:center;font-size:14px">この日の記録はありません</div>';
+}
+
+// ─────────── CSV EXPORT ───────────
+function openCSVSheet() {
+  const d = new Date();
+  document.getElementById('csv-month-btn').textContent =
+    `今月のデータ（${d.getFullYear()}年${d.getMonth()+1}月）`;
+  document.getElementById('csv-export-overlay').classList.add('show');
+}
+
+function closeCSVSheet(e) {
+  if (!e || e.target === document.getElementById('csv-export-overlay'))
+    document.getElementById('csv-export-overlay').classList.remove('show');
+}
+
+function buildCSV(list) {
+  const header = '日付,種別,カテゴリ,金額,メモ';
+  const rows = list.map(t => {
+    const memo = t.memo ? `"${t.memo.replace(/"/g, '""')}"` : '';
+    return `${t.date},${t.type==='expense'?'支出':'収入'},${t.cat},${t.amt},${memo}`;
+  });
+  return [header, ...rows].join('\n');
+}
+
+function downloadCSV(filename, content) {
+  const bom  = '﻿';
+  const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV(mode) {
+  const sorted = [...txns].sort((a,b) => a.date.localeCompare(b.date));
+  let list, filename;
+  if (mode === 'month') {
+    const d = new Date();
+    const prefix = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    list = sorted.filter(t => t.date.startsWith(prefix));
+    filename = `家計簿_${d.getFullYear()}年${d.getMonth()+1}月.csv`;
+  } else {
+    list = sorted;
+    filename = '家計簿_全件.csv';
+  }
+  if (!list.length) { toast('エクスポートするデータがありません'); return; }
+  downloadCSV(filename, buildCSV(list));
+  closeCSVSheet();
+  toast(`${list.length}件をエクスポートしました`);
 }
 
 // ─────────── STATS ───────────
+function getLast6Months() {
+  const result = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    result.push({ y: d.getFullYear(), m: d.getMonth() + 1 });
+  }
+  return result;
+}
+
 function renderBarChart() {
-  const max = Math.max(...monthlyData.map(d => Math.max(d.inc, d.exp)));
-  document.getElementById('bar-chart').innerHTML = monthlyData.map(d => `
+  const months = getLast6Months();
+  const data = months.map(({ y, m }) => {
+    const prefix = `${y}-${String(m).padStart(2,'0')}`;
+    let inc = 0, exp = 0;
+    txns.forEach(t => {
+      if (!t.date.startsWith(prefix)) return;
+      if (t.type === 'income')  inc += t.amt;
+      else                      exp += t.amt;
+    });
+    const label = m + '月';
+    return { label, inc, exp };
+  });
+  const max = Math.max(...data.map(d => Math.max(d.inc, d.exp)), 1);
+  document.getElementById('bar-chart').innerHTML = data.map(d => `
     <div class="bg-col">
       <div class="bars">
         <div class="bar i" style="height:${Math.round(d.inc/max*78)}px"></div>
         <div class="bar e" style="height:${Math.round(d.exp/max*78)}px"></div>
       </div>
-      <div class="bl">${d.m}</div>
+      <div class="bl">${d.label}</div>
     </div>
   `).join('');
 }
 
 function renderCatBars() {
-  const max = catData[0].amt;
-  document.getElementById('cat-bars').innerHTML = catData.map(c => `
+  const now = new Date();
+  const prefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const map = {};
+  txns.forEach(t => {
+    if (t.type !== 'expense' || !t.date.startsWith(prefix)) return;
+    if (!map[t.cat]) map[t.cat] = { emoji: t.emoji, amt: 0 };
+    map[t.cat].amt += t.amt;
+  });
+  const sorted = Object.entries(map)
+    .map(([name, v]) => ({ name, ...v }))
+    .sort((a,b) => b.amt - a.amt)
+    .slice(0, 6);
+  if (!sorted.length) {
+    document.getElementById('cat-bars').innerHTML =
+      '<div style="color:var(--text2);font-size:13px;text-align:center;padding:8px">データがありません</div>';
+    return;
+  }
+  const max = sorted[0].amt;
+  document.getElementById('cat-bars').innerHTML = sorted.map(c => `
     <div class="cb-row">
       <div class="cb-lbl">${c.emoji} ${c.name}</div>
       <div class="cb-track"><div class="cb-fill" style="width:${Math.round(c.amt/max*100)}%"></div></div>
       <div class="cb-amt">¥${c.amt.toLocaleString()}</div>
     </div>
   `).join('');
+}
+
+function renderStatsSummary() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth() + 1;
+  const prefix = `${y}-${String(m).padStart(2,'0')}`;
+  let inc = 0, exp = 0;
+  txns.forEach(t => {
+    if (!t.date.startsWith(prefix)) return;
+    if (t.type === 'income')  inc += t.amt;
+    else                      exp += t.amt;
+  });
+  const sav = inc - exp;
+  const pct = inc > 0 ? Math.round(sav / inc * 100) : 0;
+  document.getElementById('stats-ttl').textContent = `${y}年${m}月 サマリー`;
+  document.getElementById('stats-inc').textContent = `¥${inc.toLocaleString()}`;
+  document.getElementById('stats-exp').textContent = `¥${exp.toLocaleString()}`;
+  document.getElementById('stats-sav').textContent = `¥${Math.abs(sav).toLocaleString()}`;
+  document.getElementById('stats-sav').style.color = sav >= 0 ? 'var(--primary)' : 'var(--expense)';
+  document.getElementById('stats-savbar').style.width = `${Math.max(0, pct)}%`;
+  document.getElementById('stats-savpct').textContent = `${pct}%`;
+  document.getElementById('stats-savlbl').textContent =
+    inc > 0 ? `収入の ${pct}% を貯蓄` : '今月の収入データがありません';
 }
 
 function setPeriod(btn) {

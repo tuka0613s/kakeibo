@@ -2,7 +2,7 @@
   "name": "爆速家計簿",
   "short_name": "爆速家計簿",
   "description": "テンキー常時表示・カテゴリタップ即登録の高速家計簿",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F2F2F7",
