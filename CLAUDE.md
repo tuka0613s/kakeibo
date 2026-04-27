@@ -22,6 +22,7 @@
 - 関数は小さく。1関数1責務
 - `prompt()` は使わない。必ず専用の入力シートを作る
 - iOS Safari PWA で動くことを最優先。`pointer-events` / safe-area に注意
+- アプリのバージョンはgit pushのタイミングで変更すること
 
 ## ファイル構成（変えない）
 
@@ -33,7 +34,8 @@ CLAUDE.md    # ← このファイル（Claude への指示）
 SPEC.md      # 機能仕様書
 DESIGN.md    # 技術設計書
 PROGRESS.md  # 開発進捗
+README.md    ♯ Github公開用の情報を記載
 ```
 
 ## 禁止事項
-README.md,SPEC.md,DESIGN.md に今後の課題や残作業を含めないこと。それらはPROGRESS.md にまとめて記載すること
+README.md,SPEC.md,DESIGN.md に進捗や今後の課題、残作業を含めないこと。それらはPROGRESS.md にまとめて記載すること
