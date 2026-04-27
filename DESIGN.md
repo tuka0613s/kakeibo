@@ -20,7 +20,7 @@
 kakeibo/
 ├── index.html       # アプリ本体（CSS・JS すべて内包）
 ├── manifest.json    # PWA マニフェスト
-├── sw.js            # Service Worker（現バージョン: kakebo-v4）
+├── sw.js            # Service Worker（現バージョン: kakebo-v5）
 ├── icon-192.png     # PWA アイコン ※未生成
 ├── icon-512.png     # PWA アイコン ※未生成
 ├── README.md        # プロジェクト概要・インストール手順
@@ -123,7 +123,7 @@ kakeibo/
 ├── #edit-overlay        (z: 410)  取引編集・カスタムテンキー内蔵
 ├── #cat-edit-overlay    (z: 500)  カテゴリ追加・編集シート
 ├── #budget-edit-overlay           予算・初期残高入力（3モード共用）
-├── #csv-export-overlay            CSVエクスポート選択シート
+├── #csv-export-overlay            CSV エクスポート / インポート選択シート
 ├── #memo-sheet-overlay            メモ入力シート（prompt() の代替）
 └── #confirm-overlay               汎用確認シート（sa-danger ボタン＋コールバック）
 ```
@@ -254,6 +254,9 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `statsPeriod` | `'monthly'` | 現在の期間モード（`'monthly'` or `'yearly'`） |
 | `statsYear` | 今年 | 統計で表示中の年 |
 | `statsMonth` | 今月 | 統計で表示中の月（月次モードで使用） |
+| `catDetailName` | `''` | カテゴリ詳細で表示中のカテゴリ名 |
+| `catDetailEmoji` | `''` | カテゴリ詳細で表示中の絵文字 |
+| `catDetailSort` | `'date'` | カテゴリ詳細の取引ソート順（`'date'` or `'amt'`） |
 
 ---
 
