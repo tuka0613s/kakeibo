@@ -1,4 +1,4 @@
-const CACHE = 'kakebo-v5';
+const CACHE = 'kakebo-v6';
 const ASSETS = [
   './',
   './index.html',

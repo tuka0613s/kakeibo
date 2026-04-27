@@ -78,7 +78,8 @@ kakeibo/
 |---|---|---|
 | `kakebo_txns` | JSON 配列 | 全取引データ |
 | `kakebo_next_id` | 数値文字列 | 次の取引 ID |
-| `kakebo_layout` | `"A"` or `"B"` | 入力画面レイアウト |
+| `kakebo_layout` | `"A"` or `"B"` | 入力画面レイアウト（テンキー上/下） |
+| `kakebo_npad` | `"phone"` or `"calc"` | テンキー 0 キー位置（右端/9の下） |
 | `kakebo_cats_exp` | JSON 配列 | 支出カテゴリ一覧 |
 | `kakebo_cats_inc` | JSON 配列 | 収入カテゴリ一覧 |
 | `kakebo_budget` | JSON | 予算設定 `{monthly, alertPct}` |
@@ -222,6 +223,12 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `openSheet(id)` | 取引編集オーバーレイを開く |
 | `saveEdit()` / `deleteAndClose()` | 取引の保存・削除（全画面即時更新） |
 | `toggleLayout()` | レイアウト A/B 切り替え・localStorage 保存 |
+| `applyNumpadStyle()` | 0キー位置（右/下）を DOM に反映 |
+| `toggleNumpadStyle()` | 0キー位置トグル・localStorage 保存 |
+| `nk000()` | 000 ショートカット（calcモード時のみ呼ばれる） |
+| `nkOp(op)` | 演算子（`'+'` or `'-'`）を設定。第1オペランドを記憶して入力クリア |
+| `nkEq()` | 演算を実行して結果を `amtStr` に反映。カテゴリタップ時も自動呼出し |
+| `editNk000()` / `editNkOp(op)` / `editNkEq()` | 編集画面の同等関数 |
 | `switchTab(tab)` | タブ切り替え。calendar/stats タブは切替時に再描画 |
 | `openBudgetEdit(mode)` | 予算シート（`'monthly'` / `'alert'` / `'initial'` の3モード共用） |
 | `checkBudgetAlert()` | 登録後に予算閾値チェックしてトースト表示 |
@@ -258,6 +265,18 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `catDetailEmoji` | `''` | カテゴリ詳細で表示中の絵文字 |
 | `catDetailSort` | `'date'` | カテゴリ詳細の取引ソート順（`'date'` or `'amt'`） |
 
+### テンキー State
+
+| 変数 | 初期値 | 役割 |
+|---|---|---|
+| `amtStr` | `''` | 入力中の金額文字列（桁数上限10） |
+| `calcFirstOperand` | `null` | 演算の第1オペランド（`null` = 演算なし） |
+| `calcOp` | `null` | 演算子（`null` / `'+'` / `'-'`） |
+| `numpadCalc` | localStorage より復元 | テンキーの0キー位置（`false`=右端 / `true`=9の下） |
+| `editAmtStr` | `''` | 編集画面の入力中金額文字列 |
+| `editCalcFirstOperand` | `null` | 編集画面の演算第1オペランド |
+| `editCalcOp` | `null` | 編集画面の演算子 |
+
 ---
 
 ## デモデータ
@@ -282,6 +301,7 @@ const SEED_TXNS = (() => {
 | kakebo-v3 | モバイル全画面対応に伴うキャッシュ更新 |
 | kakebo-v4 | 強制更新機能追加・各種バグ修正に伴うキャッシュ更新 |
 | kakebo-v5 | 統計ナビ大型化・CSVインポート・カテゴリ詳細ソート・未実装メニュー無効化 |
+| kakebo-v6 | テンキー0キー位置切替・000・演算キー（−/+/=）・ダブルタップ拡大防止・右端スワイプ防止 |
 
 キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
 更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  

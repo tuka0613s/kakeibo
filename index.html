@@ -10,6 +10,7 @@
   <title>爆速家計簿</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { touch-action: manipulation; overscroll-behavior: none; }
 
     :root {
       --primary: #5856D6;
@@ -331,6 +332,17 @@
     .nk.a  { background: var(--sep); color: var(--text1); font-size: 16px; }
     .nk.span2 { grid-column: span 2; }
     .nk.span4 { grid-column: span 4; }
+
+    /* 0キー位置切替（calcモード：0を9の下に） */
+    .numpad-grid .btn-000      { display: none; }
+    .numpad-grid .btn-0-calc   { display: none; }
+    .numpad-grid .btn-calc-op  { display: none; }
+    .numpad-grid.calc-layout .btn-0-phone  { display: none; }
+    .numpad-grid.calc-layout .btn-000      { display: flex; font-size: 15px; }
+    .numpad-grid.calc-layout .btn-0-calc   { display: flex; grid-column: 3; grid-row: 4; }
+    .numpad-grid.calc-layout .btn-calc-minus { display: flex; grid-column: 1; grid-row: 4; font-size: 26px; }
+    .numpad-grid.calc-layout .btn-calc-plus  { display: flex; grid-column: 2; grid-row: 4; font-size: 24px; }
+    .numpad-grid.calc-layout .btn-calc-eq    { display: flex; grid-column: 4; grid-row: 4; font-size: 22px; }
 
     /* ════════════════════════
        CALENDAR SCREEN
@@ -874,6 +886,9 @@
           <button class="layout-btn" id="layout-btn" onclick="toggleLayout()" title="レイアウト切替">
             <span id="layout-icon">⌨</span><span style="font-size:11px">上</span>
           </button>
+          <button class="layout-btn" id="npad-style-btn" onclick="toggleNumpadStyle()" title="0キー位置切替">
+            <span style="font-size:13px">0</span><span style="font-size:11px">右</span>
+          </button>
           <div class="header-menu">≡</div>
         </div>
       </div>
@@ -916,7 +931,12 @@
           <button class="nk d" onclick="nk('1')">1</button>
           <button class="nk d" onclick="nk('2')">2</button>
           <button class="nk d" onclick="nk('3')">3</button>
-          <button class="nk d" onclick="nk('0')">0</button>
+          <button class="nk d btn-0-phone" onclick="nk('0')">0</button>
+          <button class="nk d btn-000" onclick="nk000()">000</button>
+          <button class="nk d btn-0-calc" onclick="nk('0')">0</button>
+          <button class="nk a btn-calc-op btn-calc-minus" onclick="nkOp('-')">−</button>
+          <button class="nk a btn-calc-op btn-calc-plus"  onclick="nkOp('+')">+</button>
+          <button class="nk a btn-calc-op btn-calc-eq"    onclick="nkEq()">=</button>
         </div>
       </div>
 
@@ -1147,7 +1167,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.1.0</div>
+            <div class="si-val">v1.2.0</div>
           </div>
         </div>
       </div>
@@ -1218,7 +1238,12 @@
             <button class="nk d" onclick="editNk('1')">1</button>
             <button class="nk d" onclick="editNk('2')">2</button>
             <button class="nk d" onclick="editNk('3')">3</button>
-            <button class="nk d" onclick="editNk('0')">0</button>
+            <button class="nk d btn-0-phone" onclick="editNk('0')">0</button>
+            <button class="nk d btn-000" onclick="editNk000()">000</button>
+            <button class="nk d btn-0-calc" onclick="editNk('0')">0</button>
+            <button class="nk a btn-calc-op btn-calc-minus" onclick="editNkOp('-')">−</button>
+            <button class="nk a btn-calc-op btn-calc-plus"  onclick="editNkOp('+')">+</button>
+            <button class="nk a btn-calc-op btn-calc-eq"    onclick="editNkEq()">=</button>
           </div>
         </div>
       </div>
@@ -1491,6 +1516,8 @@ let incCats = loadCats('income');
 // ─────────── STATE ───────────
 let curType    = 'expense';
 let amtStr     = '';
+let calcFirstOperand = null;
+let calcOp     = null;
 let curMemo    = '';
 let selId      = null;
 const _now     = new Date();
@@ -1542,22 +1569,58 @@ function nk(v) {
   updateAmt();
 }
 function back() {
-  amtStr = amtStr.slice(0, -1);
+  if (amtStr.length > 0) {
+    amtStr = amtStr.slice(0, -1);
+  } else if (calcOp !== null) {
+    amtStr = String(calcFirstOperand);
+    calcFirstOperand = null; calcOp = null;
+  }
   updateAmt();
 }
 function clearAmt() {
-  amtStr = '';
+  amtStr = ''; calcFirstOperand = null; calcOp = null;
+  updateAmt();
+}
+function nk000() {
+  if (!amtStr) return;
+  const add = Math.min(3, 10 - amtStr.length);
+  if (add > 0) { amtStr += '0'.repeat(add); updateAmt(); }
+}
+function nkOp(op) {
+  if (!amtStr && calcOp === null) return;
+  if (calcOp !== null && amtStr) nkEq();
+  if (!amtStr) return;
+  calcFirstOperand = parseInt(amtStr, 10);
+  calcOp = op; amtStr = '';
+  updateAmt();
+}
+function nkEq() {
+  if (calcFirstOperand === null || calcOp === null) return;
+  const second = parseInt(amtStr, 10) || 0;
+  const result = Math.max(0, calcOp === '+' ? calcFirstOperand + second : calcFirstOperand - second);
+  amtStr = String(result);
+  calcFirstOperand = null; calcOp = null;
   updateAmt();
 }
 function updateAmt() {
   const el = document.getElementById('amt-disp');
-  if (!amtStr) {
-    el.textContent = '0';
-    el.classList.remove('lit');
-  } else {
-    const n = parseFloat(amtStr);
-    el.textContent = isNaN(n) ? amtStr : n.toLocaleString('ja-JP');
+  if (calcOp !== null) {
+    const first  = calcFirstOperand.toLocaleString('ja-JP');
+    const second = amtStr ? parseInt(amtStr, 10).toLocaleString('ja-JP') : '';
+    const expr   = `${first}${calcOp}${second}`;
+    el.textContent = expr;
     el.classList.add('lit');
+    el.style.fontSize = expr.length > 9 ? '28px' : expr.length > 6 ? '38px' : '56px';
+  } else {
+    el.style.fontSize = '';
+    if (!amtStr) {
+      el.textContent = '0';
+      el.classList.remove('lit');
+    } else {
+      const n = parseFloat(amtStr);
+      el.textContent = isNaN(n) ? amtStr : n.toLocaleString('ja-JP');
+      el.classList.add('lit');
+    }
   }
 }
 function needCat() {
@@ -1586,6 +1649,7 @@ function closeMemoSheet(e) {
 
 // ─────────── REGISTER ───────────
 function register(name, emoji) {
+  if (calcOp !== null) nkEq();
   const amt = parseFloat(amtStr);
   if (!amtStr || amt === 0) { toast('金額を入力してください'); return; }
 
@@ -1762,15 +1826,27 @@ function saveCatEdit() {
 let editTxn    = null;
 let editSelCat = null;
 let editAmtStr = '';
+let editCalcFirstOperand = null;
+let editCalcOp = null;
 
 function updateEditAmt() {
   const el = document.getElementById('edit-amt-disp');
-  if (!editAmtStr) {
-    el.textContent = '0';
-    el.className = 'edit-amt-display dim';
-  } else {
-    el.textContent = parseInt(editAmtStr, 10).toLocaleString('ja-JP');
+  if (editCalcOp !== null) {
+    const first  = editCalcFirstOperand.toLocaleString('ja-JP');
+    const second = editAmtStr ? parseInt(editAmtStr, 10).toLocaleString('ja-JP') : '';
+    const expr   = `${first}${editCalcOp}${second}`;
+    el.textContent = expr;
     el.className = 'edit-amt-display';
+    el.style.fontSize = expr.length > 9 ? '22px' : expr.length > 6 ? '28px' : '38px';
+  } else {
+    el.style.fontSize = '';
+    if (!editAmtStr) {
+      el.textContent = '0';
+      el.className = 'edit-amt-display dim';
+    } else {
+      el.textContent = parseInt(editAmtStr, 10).toLocaleString('ja-JP');
+      el.className = 'edit-amt-display';
+    }
   }
 }
 function editNk(v) {
@@ -1779,11 +1855,37 @@ function editNk(v) {
   updateEditAmt();
 }
 function editBack() {
-  editAmtStr = editAmtStr.slice(0, -1);
+  if (editAmtStr.length > 0) {
+    editAmtStr = editAmtStr.slice(0, -1);
+  } else if (editCalcOp !== null) {
+    editAmtStr = String(editCalcFirstOperand);
+    editCalcFirstOperand = null; editCalcOp = null;
+  }
   updateEditAmt();
 }
 function editClearAmt() {
-  editAmtStr = '';
+  editAmtStr = ''; editCalcFirstOperand = null; editCalcOp = null;
+  updateEditAmt();
+}
+function editNk000() {
+  if (!editAmtStr) return;
+  const add = Math.min(3, 10 - editAmtStr.length);
+  if (add > 0) { editAmtStr += '0'.repeat(add); updateEditAmt(); }
+}
+function editNkOp(op) {
+  if (!editAmtStr && editCalcOp === null) return;
+  if (editCalcOp !== null && editAmtStr) editNkEq();
+  if (!editAmtStr) return;
+  editCalcFirstOperand = parseInt(editAmtStr, 10);
+  editCalcOp = op; editAmtStr = '';
+  updateEditAmt();
+}
+function editNkEq() {
+  if (editCalcFirstOperand === null || editCalcOp === null) return;
+  const second = parseInt(editAmtStr, 10) || 0;
+  const result = Math.max(0, editCalcOp === '+' ? editCalcFirstOperand + second : editCalcFirstOperand - second);
+  editAmtStr = String(result);
+  editCalcFirstOperand = null; editCalcOp = null;
   updateEditAmt();
 }
 
@@ -1800,6 +1902,7 @@ function openSheet(id) {          // 履歴・日別詳細から呼ばれる
     'toggle-btn' + (t.type === 'income'  ? ' on-income'  : '');
 
   editAmtStr = String(t.amt);
+  editCalcFirstOperand = null; editCalcOp = null;
   updateEditAmt();
   document.getElementById('edit-memo').value = t.memo;
   document.getElementById('edit-date').value = t.date;
@@ -1844,6 +1947,7 @@ function selectEditCat(name, emoji) {
 }
 
 function saveEdit() {
+  if (editCalcOp !== null) editNkEq();
   const amt = parseInt(editAmtStr, 10);
   if (!editAmtStr || isNaN(amt) || amt <= 0) { toast('正しい金額を入力してください'); return; }
 
@@ -2585,6 +2689,25 @@ function toggleLayout() {
   toast(layoutB ? 'レイアウト B：テンキー下' : 'レイアウト A：テンキー上');
 }
 
+// ─────────── NUMPAD STYLE (0キー位置) ───────────
+let numpadCalc = localStorage.getItem('kakebo_npad') === 'calc';
+
+function applyNumpadStyle() {
+  const btn = document.getElementById('npad-style-btn');
+  document.querySelectorAll('.numpad-grid').forEach(g => {
+    g.classList.toggle('calc-layout', numpadCalc);
+  });
+  btn.querySelector('span:last-child').textContent = numpadCalc ? '下' : '右';
+  btn.classList.toggle('active', numpadCalc);
+}
+
+function toggleNumpadStyle() {
+  numpadCalc = !numpadCalc;
+  try { localStorage.setItem('kakebo_npad', numpadCalc ? 'calc' : 'phone'); } catch {}
+  applyNumpadStyle();
+  toast(numpadCalc ? '0キー：9の下' : '0キー：右端');
+}
+
 // ─────────── NAV ───────────
 function switchTab(tab) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -2607,7 +2730,12 @@ function toast(msg) {
 
 // ─────────── START ───────────
 applyLayout();
+applyNumpadStyle();
 init();
+
+// 右端スワイプによる誤ナビゲーション防止
+history.pushState(null, '', location.href);
+window.addEventListener('popstate', () => history.pushState(null, '', location.href));
 
 // ─────────── SERVICE WORKER ───────────
 if ('serviceWorker' in navigator) {
