@@ -129,10 +129,22 @@
       cursor: pointer;
       padding: 4px 0;
       -webkit-tap-highlight-color: transparent;
+      position: relative;
+      border-radius: 12px;
+      transition: background .15s;
     }
-    .nav-icon { font-size: 22px; line-height: 1; }
+    .nav-icon { font-size: 22px; line-height: 1; transition: transform .15s; }
     .nav-label { font-size: 10px; color: var(--text2); }
-    .nav-item.active .nav-label { color: var(--primary); }
+    .nav-item.active .nav-label { color: var(--primary); font-weight: 600; }
+    .nav-item.active .nav-icon  { transform: scale(1.15); }
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 25%; right: 25%;
+      height: 2.5px;
+      background: var(--primary);
+      border-radius: 0 0 3px 3px;
+    }
 
     /* ════════════════════════
        INPUT SCREEN
@@ -1307,49 +1319,39 @@ function todayKey() {
 function fmtAmt(n) { return n.toLocaleString('ja-JP'); }
 
 // ─────────── DATA ───────────
-const SEED_TXNS = [
-  // 4月27日
-  { id: 1, type:'expense', cat:'食費',   emoji:'🍜', amt:1200,   date:'2026-04-27', memo:'昼食' },
-  { id: 2, type:'expense', cat:'交通費', emoji:'🚃', amt:380,    date:'2026-04-27', memo:'' },
-  { id: 3, type:'expense', cat:'カフェ', emoji:'☕', amt:700,    date:'2026-04-27', memo:'コーヒー' },
-  // 4月25日
-  { id: 4, type:'income',  cat:'給与',   emoji:'💰', amt:280000, date:'2026-04-25', memo:'4月分' },
-  { id: 5, type:'expense', cat:'日用品', emoji:'🛒', amt:2340,   date:'2026-04-25', memo:'' },
-  // 4月24日
-  { id: 6, type:'expense', cat:'外食',   emoji:'🍽️', amt:3200,   date:'2026-04-24', memo:'夕食' },
-  // 4月23日
-  { id: 7, type:'expense', cat:'娯楽',   emoji:'🎮', amt:980,    date:'2026-04-23', memo:'' },
-  // 4月22日
-  { id: 8, type:'expense', cat:'食費',   emoji:'🍜', amt:1200,   date:'2026-04-22', memo:'' },
-  // 4月20日
-  { id: 9, type:'expense', cat:'光熱費', emoji:'💡', amt:8500,   date:'2026-04-20', memo:'電気代' },
-  // 4月18日
-  { id:10, type:'expense', cat:'通信費', emoji:'📱', amt:5980,   date:'2026-04-18', memo:'' },
-  // 4月17日
-  { id:11, type:'expense', cat:'交通費', emoji:'🚃', amt:1200,   date:'2026-04-17', memo:'' },
-  { id:12, type:'expense', cat:'外食',   emoji:'🍽️', amt:3300,   date:'2026-04-17', memo:'週末ランチ' },
-  // 4月15日
-  { id:13, type:'expense', cat:'医療',   emoji:'💊', amt:2100,   date:'2026-04-15', memo:'病院' },
-  // 4月12日
-  { id:14, type:'expense', cat:'食費',   emoji:'🍜', amt:1760,   date:'2026-04-12', memo:'' },
-  // 4月10日
-  { id:15, type:'expense', cat:'娯楽',   emoji:'🎮', amt:980,    date:'2026-04-10', memo:'' },
-  // 4月7日
-  { id:16, type:'expense', cat:'外食',   emoji:'🍽️', amt:3200,   date:'2026-04-07', memo:'週末外食' },
-  // 4月5日
-  { id:17, type:'expense', cat:'光熱費', emoji:'💡', amt:12000,  date:'2026-04-05', memo:'ガス代' },
-  // 4月3日
-  { id:18, type:'expense', cat:'食費',   emoji:'🍜', amt:850,    date:'2026-04-03', memo:'' },
-  // 4月1日
-  { id:19, type:'expense', cat:'交通費', emoji:'🚃', amt:1500,   date:'2026-04-01', memo:'' },
-  // 3月（月ナビ動作確認用）
-  { id:20, type:'income',  cat:'給与',   emoji:'💰', amt:280000, date:'2026-03-15', memo:'3月分' },
-  { id:21, type:'expense', cat:'光熱費', emoji:'💡', amt:8500,   date:'2026-03-15', memo:'電気代' },
-  { id:22, type:'expense', cat:'外食',   emoji:'🍽️', amt:4200,   date:'2026-03-22', memo:'' },
-  { id:23, type:'expense', cat:'食費',   emoji:'🍜', amt:3200,   date:'2026-03-05', memo:'' },
-  { id:24, type:'expense', cat:'日用品', emoji:'🛒', amt:1800,   date:'2026-03-10', memo:'' },
-  { id:25, type:'expense', cat:'娯楽',   emoji:'🎮', amt:2100,   date:'2026-03-28', memo:'' },
-];
+const SEED_TXNS = (() => {
+  const list = [];
+  let id = 1;
+  const push = (type, cat, emoji, amt, y, m, d, memo = '') =>
+    list.push({ id: id++, type, cat, emoji, amt,
+      date: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`, memo });
+
+  for (let y = 2024; y <= 2026; y++) {
+    const maxM = y === 2026 ? 4 : 12;
+    for (let m = 1; m <= maxM; m++) {
+      const w = m <= 2 || m >= 11; // 冬
+      push('income',  '給与',   '💰', 280000,         y, m, 25, `${m}月分給与`);
+      push('expense', '家賃',   '🏠',  80000,          y, m,  1);
+      push('expense', '光熱費', '💡', w ? 12000 : 8500, y, m, 10, '電気代');
+      if (w) push('expense', '光熱費', '💡', 8500, y, m, 5, 'ガス代');
+      push('expense', '通信費', '📱',   5980, y, m, 18);
+      push('expense', '日用品', '🛒', m % 2 ? 1800 : 2400, y, m, 12);
+      push('expense', '食費',   '🍜',   1200, y, m,  3);
+      push('expense', '食費',   '🍜',    980, y, m,  8);
+      push('expense', '食費',   '🍜',   1500, y, m, 20);
+      push('expense', '外食',   '🍽️',  3200, y, m,  7, '週末外食');
+      push('expense', '外食',   '🍽️',  2800, y, m, 22);
+      push('expense', 'カフェ', '☕',    700, y, m, 15);
+      push('expense', '交通費', '🚃',    380, y, m, 14);
+      if (m % 2 === 0) push('expense', '娯楽', '🎮', 1500, y, m, 28);
+      if (m === 3 || m === 9) push('expense', '医療', '💊', 2100, y, m, 16, '病院');
+      if (m === 4 || m === 10) push('income', 'ボーナス', '💝', m === 4 ? 200000 : 250000, y, m, 28, m === 4 ? '春ボーナス' : '秋ボーナス');
+      if (m === 12) push('expense', '外食', '🍽️', 8000, y, m, 24, '忘年会');
+      if (m === 1 && y > 2024) push('income', 'その他', '💝', 30000, y, m, 3, 'お年玉');
+    }
+  }
+  return list;
+})();
 
 function loadTxns() {
   try {
@@ -1411,8 +1413,9 @@ let curType    = 'expense';
 let amtStr     = '';
 let curMemo    = '';
 let selId      = null;
-let calYear    = 2026;
-let calMonth   = 4; // 1-indexed
+const _now     = new Date();
+let calYear    = _now.getFullYear();
+let calMonth   = _now.getMonth() + 1;
 let selDate    = null;
 
 // ─────────── INIT ───────────
@@ -2133,7 +2136,7 @@ function confirmLoadDemo() {
 }
 function loadDemoData() {
   txns   = JSON.parse(JSON.stringify(SEED_TXNS));
-  nextId = 26;
+  nextId = SEED_TXNS[SEED_TXNS.length - 1].id + 1;
   saveTxns(); saveNextId();
   renderHist();
   toast('デモデータを登録しました');
@@ -2302,6 +2305,8 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`screen-${tab}`).classList.add('active');
   document.getElementById(`nav-${tab}`).classList.add('active');
+  if (tab === 'calendar') renderCalendar();
+  if (tab === 'stats') { renderStatsSummary(); renderBarChart(); renderCatBars(); }
 }
 
 // ─────────── TOAST ───────────
