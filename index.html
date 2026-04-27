@@ -227,7 +227,7 @@
       flex: 1;
       overflow-y: auto;
       padding: 0 16px 4px;
-      min-height: 120px;
+      min-height: 60px;
     }
     .hist-wrap::-webkit-scrollbar { display: none; }
 
@@ -333,16 +333,37 @@
     .nk.span2 { grid-column: span 2; }
     .nk.span4 { grid-column: span 4; }
 
-    /* 0キー位置切替（calcモード：0を9の下に） */
-    .numpad-grid .btn-000      { display: none; }
-    .numpad-grid .btn-0-calc   { display: none; }
-    .numpad-grid .btn-calc-op  { display: none; }
+    /* 0キー位置切替（calcモード：4×4グリッド） */
+    .numpad-grid .btn-000        { display: none; }
+    .numpad-grid .btn-0-calc     { display: none; }
+    .numpad-grid .btn-calc-plus  { display: none; }
+    .numpad-grid .btn-calc-minus { display: none; }
+    .numpad-grid .btn-calc-eq    { display: none; }
+
+    .numpad-grid.calc-layout {
+      grid-template-areas:
+        "n7 n8 n9 plus"
+        "n4 n5 n6 minus"
+        "n1 n2 n3 eq"
+        "n0 k000 cl bk";
+    }
+    .numpad-grid.calc-layout .nk-7      { grid-area: n7; }
+    .numpad-grid.calc-layout .nk-8      { grid-area: n8; }
+    .numpad-grid.calc-layout .nk-9      { grid-area: n9; }
+    .numpad-grid.calc-layout .nk-4      { grid-area: n4; }
+    .numpad-grid.calc-layout .nk-5      { grid-area: n5; }
+    .numpad-grid.calc-layout .nk-6      { grid-area: n6; }
+    .numpad-grid.calc-layout .nk-1      { grid-area: n1; }
+    .numpad-grid.calc-layout .nk-2      { grid-area: n2; }
+    .numpad-grid.calc-layout .nk-3      { grid-area: n3; }
+    .numpad-grid.calc-layout .nk-back   { grid-area: bk; }
+    .numpad-grid.calc-layout .nk-clear  { grid-area: cl; }
     .numpad-grid.calc-layout .btn-0-phone  { display: none; }
-    .numpad-grid.calc-layout .btn-000      { display: flex; font-size: 15px; }
-    .numpad-grid.calc-layout .btn-0-calc   { display: flex; grid-column: 3; grid-row: 4; }
-    .numpad-grid.calc-layout .btn-calc-minus { display: flex; grid-column: 1; grid-row: 4; font-size: 26px; }
-    .numpad-grid.calc-layout .btn-calc-plus  { display: flex; grid-column: 2; grid-row: 4; font-size: 24px; }
-    .numpad-grid.calc-layout .btn-calc-eq    { display: flex; grid-column: 4; grid-row: 4; font-size: 22px; }
+    .numpad-grid.calc-layout .btn-0-calc   { display: flex; grid-area: n0; }
+    .numpad-grid.calc-layout .btn-000      { display: flex; grid-area: k000; font-size: 15px; }
+    .numpad-grid.calc-layout .btn-calc-plus  { display: flex; grid-area: plus; font-size: 24px; }
+    .numpad-grid.calc-layout .btn-calc-minus { display: flex; grid-area: minus; font-size: 26px; }
+    .numpad-grid.calc-layout .btn-calc-eq    { display: flex; grid-area: eq;   font-size: 22px; }
 
     /* ════════════════════════
        CALENDAR SCREEN
@@ -918,25 +939,25 @@
       <!-- 2. テンキー -->
       <div class="numpad">
         <div class="numpad-grid">
-          <button class="nk d" onclick="nk('7')">7</button>
-          <button class="nk d" onclick="nk('8')">8</button>
-          <button class="nk d" onclick="nk('9')">9</button>
-          <button class="nk a" onclick="back()">⌫</button>
+          <button class="nk d nk-7" onclick="nk('7')">7</button>
+          <button class="nk d nk-8" onclick="nk('8')">8</button>
+          <button class="nk d nk-9" onclick="nk('9')">9</button>
+          <button class="nk a nk-back" onclick="back()">⌫</button>
 
-          <button class="nk d" onclick="nk('4')">4</button>
-          <button class="nk d" onclick="nk('5')">5</button>
-          <button class="nk d" onclick="nk('6')">6</button>
-          <button class="nk a" onclick="clearAmt()">C</button>
+          <button class="nk d nk-4" onclick="nk('4')">4</button>
+          <button class="nk d nk-5" onclick="nk('5')">5</button>
+          <button class="nk d nk-6" onclick="nk('6')">6</button>
+          <button class="nk a nk-clear" onclick="clearAmt()">C</button>
 
-          <button class="nk d" onclick="nk('1')">1</button>
-          <button class="nk d" onclick="nk('2')">2</button>
-          <button class="nk d" onclick="nk('3')">3</button>
+          <button class="nk d nk-1" onclick="nk('1')">1</button>
+          <button class="nk d nk-2" onclick="nk('2')">2</button>
+          <button class="nk d nk-3" onclick="nk('3')">3</button>
           <button class="nk d btn-0-phone" onclick="nk('0')">0</button>
           <button class="nk d btn-000" onclick="nk000()">000</button>
           <button class="nk d btn-0-calc" onclick="nk('0')">0</button>
-          <button class="nk a btn-calc-op btn-calc-minus" onclick="nkOp('-')">−</button>
-          <button class="nk a btn-calc-op btn-calc-plus"  onclick="nkOp('+')">+</button>
-          <button class="nk a btn-calc-op btn-calc-eq"    onclick="nkEq()">=</button>
+          <button class="nk a btn-calc-plus"  onclick="nkOp('+')">+</button>
+          <button class="nk a btn-calc-minus" onclick="nkOp('-')">−</button>
+          <button class="nk a btn-calc-eq"    onclick="nkEq()">=</button>
         </div>
       </div>
 
@@ -1227,23 +1248,23 @@
       <div class="edit-sec" style="margin:0 -16px">
         <div class="numpad" style="border-radius:0">
           <div class="numpad-grid">
-            <button class="nk d" onclick="editNk('7')">7</button>
-            <button class="nk d" onclick="editNk('8')">8</button>
-            <button class="nk d" onclick="editNk('9')">9</button>
-            <button class="nk a" onclick="editBack()">⌫</button>
-            <button class="nk d" onclick="editNk('4')">4</button>
-            <button class="nk d" onclick="editNk('5')">5</button>
-            <button class="nk d" onclick="editNk('6')">6</button>
-            <button class="nk a" onclick="editClearAmt()">C</button>
-            <button class="nk d" onclick="editNk('1')">1</button>
-            <button class="nk d" onclick="editNk('2')">2</button>
-            <button class="nk d" onclick="editNk('3')">3</button>
+            <button class="nk d nk-7" onclick="editNk('7')">7</button>
+            <button class="nk d nk-8" onclick="editNk('8')">8</button>
+            <button class="nk d nk-9" onclick="editNk('9')">9</button>
+            <button class="nk a nk-back" onclick="editBack()">⌫</button>
+            <button class="nk d nk-4" onclick="editNk('4')">4</button>
+            <button class="nk d nk-5" onclick="editNk('5')">5</button>
+            <button class="nk d nk-6" onclick="editNk('6')">6</button>
+            <button class="nk a nk-clear" onclick="editClearAmt()">C</button>
+            <button class="nk d nk-1" onclick="editNk('1')">1</button>
+            <button class="nk d nk-2" onclick="editNk('2')">2</button>
+            <button class="nk d nk-3" onclick="editNk('3')">3</button>
             <button class="nk d btn-0-phone" onclick="editNk('0')">0</button>
             <button class="nk d btn-000" onclick="editNk000()">000</button>
             <button class="nk d btn-0-calc" onclick="editNk('0')">0</button>
-            <button class="nk a btn-calc-op btn-calc-minus" onclick="editNkOp('-')">−</button>
-            <button class="nk a btn-calc-op btn-calc-plus"  onclick="editNkOp('+')">+</button>
-            <button class="nk a btn-calc-op btn-calc-eq"    onclick="editNkEq()">=</button>
+            <button class="nk a btn-calc-plus"  onclick="editNkOp('+')">+</button>
+            <button class="nk a btn-calc-minus" onclick="editNkOp('-')">−</button>
+            <button class="nk a btn-calc-eq"    onclick="editNkEq()">=</button>
           </div>
         </div>
       </div>
@@ -1677,7 +1698,7 @@ function register(name, emoji) {
 // ─────────── HISTORY ───────────
 function renderHist() {
   const list = document.getElementById('hist-list');
-  const recent = txns.slice(0, 6);
+  const recent = txns.slice(0, 4);
   if (!recent.length) { list.innerHTML = '<div class="hist-item" style="color:var(--text2);justify-content:center">まだ記録がありません</div>'; return; }
   list.innerHTML = recent.map(t => histRow(t)).join('');
 }
