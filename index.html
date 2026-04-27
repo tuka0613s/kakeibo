@@ -559,6 +559,9 @@
     #screen-input.layout-b .cat-wrap      { order: 6; }
     #screen-input.layout-b .numpad        { order: 7; }
 
+    /* ブラウザモード（非PWA）: Layout B でテンキーが隠れないよう hist-wrap の最小高さを解除 */
+    body.browser-mode #screen-input.layout-b .hist-wrap { min-height: 0; }
+
     .layout-btn {
       background: var(--sep);
       border: none;
@@ -1087,10 +1090,15 @@
 
         <div class="sg-title">アプリ情報</div>
         <div class="sg">
+          <div class="si" onclick="forceUpdate()">
+            <div class="si-icon" style="background:#E5FFF8">🔄</div>
+            <div class="si-lbl">アップデートを確認・強制更新</div>
+            <div class="si-arrow">›</div>
+          </div>
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.0.0</div>
+            <div class="si-val">v1.1.0</div>
           </div>
         </div>
       </div>
@@ -1409,6 +1417,10 @@ let selDate    = null;
 
 // ─────────── INIT ───────────
 function init() {
+  // ブラウザモード（非PWA）検出
+  if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches)) {
+    document.body.classList.add('browser-mode');
+  }
   renderHist();
   renderCats();
   renderCalendar();
@@ -1474,7 +1486,7 @@ function editMemo() {
   const input = document.getElementById('memo-sheet-input');
   input.value = curMemo;
   document.getElementById('memo-sheet-overlay').classList.add('show');
-  setTimeout(() => input.focus(), 150);
+  input.focus();
 }
 function saveMemoSheet() {
   curMemo = document.getElementById('memo-sheet-input').value;
@@ -2142,6 +2154,27 @@ function _confirmOK() {
 function closeConfirmSheet(e) {
   if (!e || e.target === document.getElementById('confirm-overlay'))
     document.getElementById('confirm-overlay').classList.remove('show');
+}
+
+// ─────────── FORCE UPDATE ───────────
+function forceUpdate() {
+  showConfirm(
+    'アップデートを確認',
+    'キャッシュを削除して最新版を読み込みます。ページが再読み込みされます。',
+    async () => {
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) await r.unregister();
+        }
+      } catch {}
+      location.reload(true);
+    }
+  );
 }
 
 // ─────────── STATS ───────────
