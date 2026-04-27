@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#5856D6">
+  <link rel="manifest" href="manifest.json">
+  <title>爆速家計簿</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #5856D6;
+      --expense: #FF3B30;
+      --income: #34C759;
+      --bg: #F2F2F7;
+      --card: #FFFFFF;
+      --text1: #1C1C1E;
+      --text2: #8E8E93;
+      --sep: #E5E5EA;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+      background: #1C1C1E;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* ─── iPhone 17 frame ─── */
+    .frame {
+      width: 393px;
+      height: 852px;
+      background: var(--bg);
+      border-radius: 54px;
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        0 0 0 2px #3A3A3C,
+        0 0 0 6px #2C2C2E,
+        0 40px 100px rgba(0,0,0,.9);
+    }
+
+    .dynamic-island {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 126px;
+      height: 37px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 100;
+    }
+
+    /* ─── App shell ─── */
+    .app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .status-bar {
+      height: 59px;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 28px 8px;
+      justify-content: space-between;
+      font-size: 15px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* ─── Screens ─── */
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .screen.active { display: flex; }
+
+    /* ─── Bottom nav ─── */
+    .bottom-nav {
+      height: 83px;
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(20px);
+      border-top: .5px solid var(--sep);
+      display: flex;
+      align-items: flex-start;
+      padding-top: 8px;
+      flex-shrink: 0;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 4px 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-icon { font-size: 22px; line-height: 1; }
+    .nav-label { font-size: 10px; color: var(--text2); }
+    .nav-item.active .nav-label { color: var(--primary); }
+
+    /* ════════════════════════
+       INPUT SCREEN
+    ════════════════════════ */
+    #screen-input {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+    #screen-input.active { display: flex; }
+
+    .input-header {
+      padding: 4px 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .date-label { font-size: 17px; font-weight: 700; color: var(--text1); }
+    .date-sub   { font-size: 12px; color: var(--text2); margin-top: 1px; }
+    .header-menu { font-size: 24px; color: var(--text2); cursor: pointer; }
+
+    .type-toggle {
+      display: flex;
+      margin: 8px 20px 0;
+      background: var(--sep);
+      border-radius: 10px;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: 6px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .toggle-btn.on-expense { background: var(--expense); color: #fff; }
+    .toggle-btn.on-income  { background: var(--income);  color: #fff; }
+
+    .amount-wrap {
+      padding: 4px 20px 4px;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .amount-yen { font-size: 26px; font-weight: 300; color: var(--text2); }
+    .amount-val {
+      font-size: 56px;
+      font-weight: 200;
+      color: var(--text1);
+      letter-spacing: -3px;
+      line-height: 1;
+    }
+    .amount-val.lit { color: var(--primary); }
+
+    .memo-hint {
+      margin: 2px 20px 6px;
+      padding: 7px 12px;
+      background: var(--card);
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text2);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .memo-hint.filled { color: var(--text1); }
+
+    /* history */
+    .hist-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 4px;
+      min-height: 120px;
+    }
+    .hist-wrap::-webkit-scrollbar { display: none; }
+
+    .sec-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      padding: 4px 4px 5px;
+    }
+
+    .card-list {
+      background: var(--card);
+      border-radius: 13px;
+      overflow: hidden;
+    }
+    .hist-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 14px;
+      gap: 6px;
+      cursor: pointer;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hist-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 14px; right: 0;
+      height: .5px;
+      background: var(--sep);
+    }
+    .hist-emoji { display: none; }
+    /* 1行レイアウト */
+    .hist-line {
+      flex: 1; min-width: 0;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+      font-size: 14px;
+    }
+    .hist-cat  { font-weight: 600; color: var(--text1); }
+    .hist-memo { color: var(--text2); }
+    .hist-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .hist-date  { font-size: 11px; color: var(--text2); }
+    .hist-amt   { font-size: 14px; font-weight: 600; }
+    .hist-amt.exp { color: var(--expense); }
+    .hist-amt.inc { color: var(--income); }
+
+    /* categories */
+    .cat-wrap { padding: 0 16px 4px; flex-shrink: 0; }
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: var(--card);
+      border-radius: 13px;
+      padding: 8px;
+    }
+    .cat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 7px 2px;
+      border-radius: 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .1s;
+    }
+    .cat-item:active { background: var(--sep); }
+    .cat-emoji { font-size: 22px; }
+    .cat-name  { font-size: 11px; color: var(--text1); text-align: center; }
+
+    /* numpad */
+    .numpad {
+      background: var(--card);
+      border-top: .5px solid var(--sep);
+      border-bottom: .5px solid var(--sep);
+      padding: 6px 10px 6px;
+      flex-shrink: 0;
+    }
+    .numpad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .nk {
+      height: 46px;
+      border: none;
+      border-radius: 10px;
+      font-size: 22px;
+      font-weight: 400;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity .1s;
+    }
+    .nk:active { opacity: .6; }
+    .nk.d  { background: #FFF; color: var(--text1); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .nk.a  { background: var(--sep); color: var(--text1); font-size: 16px; }
+    .nk.span2 { grid-column: span 2; }
+    .nk.span4 { grid-column: span 4; }
+
+    /* ════════════════════════
+       CALENDAR SCREEN
+    ════════════════════════ */
+    .cal-header {
+      padding: 4px 20px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .cal-title { font-size: 20px; font-weight: 700; color: var(--text1); }
+    .cal-nav-btn {
+      font-size: 22px;
+      color: var(--primary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 8px;
+    }
+
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 0 14px;
+      flex-shrink: 0;
+    }
+    .wd {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      padding: 3px 0;
+    }
+    .wd:first-child { color: var(--expense); }
+    .wd:last-child  { color: var(--primary); }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 0 14px;
+      gap: 1px;
+      flex-shrink: 0;
+    }
+    .cd {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2px 1px;
+      border-radius: 10px;
+      cursor: pointer;
+      min-height: 46px;
+    }
+    .cd-num {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      color: var(--text1);
+    }
+    .cd.today .cd-num { background: var(--primary); color: #fff; font-weight: 600; }
+    .cd.sun .cd-num { color: var(--expense); }
+    .cd.sat .cd-num { color: var(--primary); }
+    .cd.today.sun .cd-num,
+    .cd.today.sat .cd-num { color: #fff; }
+    .cd.other .cd-num { color: var(--text2); opacity: .4; }
+    .cd-amt { font-size: 9px; color: var(--expense); margin-top: 1px; line-height: 1; }
+    .cd-inc { font-size: 9px; color: var(--income); margin-top: 1px; line-height: 1; }
+
+    .daily-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 16px;
+      min-height: 0;
+    }
+    .daily-wrap::-webkit-scrollbar { display: none; }
+
+    /* monthly summary card */
+    .month-sum-card {
+      background: var(--card);
+      border-radius: 13px;
+      padding: 10px 16px;
+      margin-bottom: 10px;
+    }
+    .ms-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+    }
+    .ms-lbl      { font-size: 14px; color: var(--text2); }
+    .ms-lbl-bold { font-weight: 700; color: var(--text1); }
+    .ms-val      { font-size: 15px; font-weight: 600; color: var(--text1); }
+    .ms-val-lg   { font-size: 19px; font-weight: 700; }
+    .ms-sep      { height: .5px; background: var(--sep); margin: 4px 0; }
+    .ms-bal-row  { padding-top: 4px; }
+
+    /* ════════════════════════
+       STATS SCREEN
+    ════════════════════════ */
+    .stats-header { padding: 4px 20px 8px; flex-shrink: 0; }
+    .stats-title  { font-size: 20px; font-weight: 700; color: var(--text1); }
+
+    .period-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .period-btn {
+      padding: 5px 16px;
+      border-radius: 20px;
+      border: 1.5px solid var(--sep);
+      font-size: 13px;
+      font-weight: 500;
+      background: none;
+      color: var(--text2);
+      cursor: pointer;
+    }
+    .period-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .stats-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 16px;
+      min-height: 0;
+    }
+    .stats-scroll::-webkit-scrollbar { display: none; }
+
+    .stat-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .stat-ttl {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 12px;
+    }
+
+    .summary-row { display: flex; justify-content: space-around; }
+    .sum-item    { text-align: center; }
+    .sum-lbl     { font-size: 12px; color: var(--text2); }
+    .sum-val     { font-size: 20px; font-weight: 700; margin-top: 3px; }
+
+    /* bar chart */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 100px;
+    }
+    .bg-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .bars   { display: flex; gap: 2px; align-items: flex-end; height: 80px; width: 100%; }
+    .bar    { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; }
+    .bar.i  { background: var(--income);  opacity: .75; }
+    .bar.e  { background: var(--expense); opacity: .75; }
+    .bl     { font-size: 10px; color: var(--text2); }
+
+    /* category bar */
+    .cat-bars { display: flex; flex-direction: column; gap: 9px; }
+    .cb-row   { display: flex; align-items: center; gap: 8px; }
+    .cb-lbl   { width: 68px; font-size: 12px; color: var(--text1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cb-track { flex: 1; height: 8px; background: var(--sep); border-radius: 4px; overflow: hidden; }
+    .cb-fill  { height: 100%; border-radius: 4px; background: var(--expense); opacity: .8; }
+    .cb-amt   { width: 60px; font-size: 12px; font-weight: 600; color: var(--text1); text-align: right; }
+
+    /* legend */
+    .legend { display: flex; gap: 16px; justify-content: flex-end; margin-bottom: 8px; }
+    .legend-dot { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text2); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ════════════════════════
+       SETTINGS SCREEN
+    ════════════════════════ */
+    .settings-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px 16px;
+    }
+    .settings-scroll::-webkit-scrollbar { display: none; }
+
+    .sg-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      padding: 0 4px 6px;
+    }
+    .sg {
+      background: var(--card);
+      border-radius: 13px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .si {
+      display: flex;
+      align-items: center;
+      padding: 13px 14px;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .si:not(:last-child) { border-bottom: .5px solid var(--sep); }
+    .si-icon {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .si-lbl   { flex: 1; font-size: 15px; color: var(--text1); }
+    .si-val   { font-size: 15px; color: var(--text2); }
+    .si-arrow { color: var(--text2); font-size: 16px; }
+
+    /* ─── Layout toggle ─── */
+    /* Layout A (default): 予算バー→金額→テンキー→カテゴリ→メモ→履歴 */
+    #screen-input .type-toggle   { order: 1; }
+    #screen-input .budget-bar-wrap { order: 2; }
+    #screen-input .amount-wrap   { order: 3; }
+    #screen-input .numpad        { order: 4; }
+    #screen-input .cat-wrap      { order: 5; }
+    #screen-input .memo-hint     { order: 6; }
+    #screen-input .hist-wrap     { order: 7; }
+
+    /* Layout B: 予算バー→金額→メモ→履歴→カテゴリ→テンキー */
+    #screen-input.layout-b .budget-bar-wrap { order: 2; }
+    #screen-input.layout-b .amount-wrap   { order: 3; }
+    #screen-input.layout-b .memo-hint     { order: 4; }
+    #screen-input.layout-b .hist-wrap     { order: 5; }
+    #screen-input.layout-b .cat-wrap      { order: 6; }
+    #screen-input.layout-b .numpad        { order: 7; }
+
+    .layout-btn {
+      background: var(--sep);
+      border: none;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--text2);
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .layout-btn.active { background: var(--primary); color: #fff; }
+
+    /* ─── Category Management ─── */
+    .full-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 400;
+      display: none;
+      flex-direction: column;
+    }
+    .full-overlay.show { display: flex; }
+
+    .full-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--card);
+      border-bottom: .5px solid var(--sep);
+      flex-shrink: 0;
+    }
+    .full-header-title { font-size: 17px; font-weight: 600; color: var(--text1); }
+    .fh-btn {
+      background: none; border: none;
+      font-size: 15px; font-weight: 600;
+      color: var(--primary); cursor: pointer; padding: 4px 0;
+    }
+    .fh-btn.danger { color: var(--expense); }
+
+    .cat-tab-row {
+      display: flex;
+      margin: 10px 16px;
+      background: var(--sep);
+      border-radius: 10px;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    .cat-tab {
+      flex: 1; padding: 7px; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: 600;
+      background: transparent; color: var(--text2); cursor: pointer;
+    }
+    .cat-tab.active { background: var(--card); color: var(--text1); }
+
+    .cat-mgmt-scroll {
+      flex: 1; overflow-y: auto; padding: 0 16px 16px;
+    }
+    .cat-mgmt-scroll::-webkit-scrollbar { display: none; }
+
+    .cmi {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border-radius: 12px;
+      padding: 10px 12px; margin-bottom: 6px;
+    }
+    .cmi-emoji { font-size: 22px; width: 30px; text-align: center; flex-shrink: 0; }
+    .cmi-name  { flex: 1; font-size: 15px; color: var(--text1); }
+    .cmi-btns  { display: flex; gap: 4px; }
+    .cmi-btn {
+      width: 30px; height: 30px; border: none; border-radius: 8px;
+      background: var(--sep); color: var(--text2); font-size: 13px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cmi-btn:disabled { opacity: .3; pointer-events: none; }
+    .cmi-btn.del { background: #FFE5E5; color: var(--expense); }
+
+    .cat-add-btn {
+      width: 100%; padding: 14px; border: 1.5px dashed var(--sep);
+      border-radius: 12px; background: none; font-size: 15px;
+      color: var(--primary); cursor: pointer; margin-top: 4px; font-weight: 500;
+    }
+
+    /* cat edit sheet (above full-overlay) */
+    #cat-edit-overlay { z-index: 500; }
+
+    .cat-edit-body { padding-bottom: 4px; }
+    .cat-edit-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg); border-radius: 12px;
+      padding: 10px 14px; margin-bottom: 10px;
+    }
+    .cat-edit-preview {
+      font-size: 34px; width: 48px; height: 48px;
+      background: var(--card); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .cat-edit-emoji-input {
+      flex: 1; border: none; background: var(--card);
+      border-radius: 10px; padding: 10px 12px;
+      font-size: 20px; outline: none; color: var(--text1);
+    }
+    .cat-edit-emoji-input::placeholder { color: var(--text2); font-size: 14px; }
+    .cat-edit-name-input {
+      width: 100%; border: none; background: var(--bg);
+      border-radius: 12px; padding: 14px 16px;
+      font-size: 16px; outline: none; color: var(--text1);
+      margin-bottom: 4px;
+    }
+    .cat-edit-name-input::placeholder { color: var(--text2); }
+
+    /* ─── Transaction Edit Overlay ─── */
+    #edit-overlay { z-index: 450; }
+
+    .edit-scroll {
+      flex: 1; overflow-y: auto; padding: 8px 16px 16px;
+    }
+    .edit-scroll::-webkit-scrollbar { display: none; }
+
+    .edit-sec { margin-bottom: 12px; }
+    .edit-lbl {
+      font-size: 11px; font-weight: 600; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .5px;
+      padding: 0 4px 5px;
+    }
+
+    .edit-amount-card {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--card); border-radius: 13px;
+      padding: 8px 16px;
+    }
+    .edit-yen { font-size: 22px; font-weight: 300; color: var(--text2); }
+    .edit-amt-input {
+      flex: 1; border: none; background: none;
+      font-size: 38px; font-weight: 200; color: var(--primary);
+      outline: none; letter-spacing: -2px;
+    }
+    .edit-amt-input::placeholder { color: var(--sep); }
+
+    .edit-cat-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 6px; background: var(--card);
+      border-radius: 13px; padding: 8px;
+    }
+    .cat-item.sel { background: var(--primary); }
+    .cat-item.sel .cat-name { color: #fff; }
+
+    .edit-field {
+      width: 100%; border: none;
+      background: var(--card); border-radius: 13px;
+      padding: 13px 16px; font-size: 15px;
+      outline: none; color: var(--text1);
+      font-family: inherit;
+    }
+    .edit-field::placeholder { color: var(--text2); }
+
+    .edit-actions {
+      display: flex; gap: 8px; padding: 8px 16px 16px;
+      flex-shrink: 0;
+    }
+    .edit-actions .sa-btn { flex: 1; }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: rgba(28,28,30,.92);
+      color: #fff;
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      transition: all .25s;
+      white-space: nowrap;
+      z-index: 500;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ─── Budget Bar ─── */
+    .budget-bar-wrap {
+      margin: 2px 20px 0;
+      flex-shrink: 0;
+    }
+    .budget-bar-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text2);
+      margin-bottom: 3px;
+    }
+    .budget-bar-track {
+      height: 4px;
+      background: var(--sep);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .budget-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--income);
+      transition: width .3s, background .3s;
+    }
+    .budget-bar-fill.warn { background: #FF9500; }
+    .budget-bar-fill.over { background: var(--expense); }
+
+    /* ─── Bottom Sheet Modal ─── */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 300;
+      display: none;
+      align-items: flex-end;
+    }
+    .overlay.show { display: flex; }
+    .sheet {
+      width: 100%;
+      background: var(--bg);
+      border-radius: 24px 24px 0 0;
+      padding: 12px 20px 40px;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--sep);
+      border-radius: 2px;
+      margin: 0 auto 14px;
+    }
+    .sheet-title {
+      font-size: 17px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 18px;
+      color: var(--text1);
+    }
+    .sheet-actions { display: flex; flex-direction: column; gap: 8px; }
+    .sa-btn {
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .sa-primary { background: var(--primary); color: #fff; }
+    .sa-danger  { background: #FFE5E5; color: var(--expense); }
+    .sa-cancel  { background: var(--sep); color: var(--text1); }
+  </style>
+</head>
+<body>
+<div class="frame">
+  <div class="dynamic-island"></div>
+
+  <div class="app">
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="font-size:13px">●●● ▶ 🔋</span>
+    </div>
+
+    <!-- ════ INPUT SCREEN ════ -->
+    <div class="screen active" id="screen-input">
+
+      <div class="input-header">
+        <div>
+          <div class="date-label">2026年4月27日</div>
+          <div class="date-sub">月曜日</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="layout-btn" id="layout-btn" onclick="toggleLayout()" title="レイアウト切替">
+            <span id="layout-icon">⌨</span><span style="font-size:11px">上</span>
+          </button>
+          <div class="header-menu">≡</div>
+        </div>
+      </div>
+
+      <div class="type-toggle">
+        <button class="toggle-btn on-expense" id="btn-exp" onclick="setType('expense')">支出</button>
+        <button class="toggle-btn"            id="btn-inc" onclick="setType('income')">収入</button>
+      </div>
+
+      <!-- 予算バー -->
+      <div class="budget-bar-wrap" id="budget-bar-wrap" style="display:none">
+        <div class="budget-bar-top">
+          <span id="budget-bar-lbl">今月の支出</span>
+          <span id="budget-bar-pct"></span>
+        </div>
+        <div class="budget-bar-track">
+          <div class="budget-bar-fill" id="budget-bar-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- 1. 金額 -->
+      <div class="amount-wrap">
+        <span class="amount-yen">¥</span>
+        <span class="amount-val" id="amt-disp">0</span>
+      </div>
+
+      <!-- 2. テンキー -->
+      <div class="numpad">
+        <div class="numpad-grid">
+          <button class="nk d" onclick="nk('7')">7</button>
+          <button class="nk d" onclick="nk('8')">8</button>
+          <button class="nk d" onclick="nk('9')">9</button>
+          <button class="nk a" onclick="back()">⌫</button>
+
+          <button class="nk d" onclick="nk('4')">4</button>
+          <button class="nk d" onclick="nk('5')">5</button>
+          <button class="nk d" onclick="nk('6')">6</button>
+          <button class="nk a" onclick="clearAmt()">C</button>
+
+          <button class="nk d" onclick="nk('1')">1</button>
+          <button class="nk d" onclick="nk('2')">2</button>
+          <button class="nk d" onclick="nk('3')">3</button>
+          <button class="nk d" onclick="nk('0')">0</button>
+        </div>
+      </div>
+
+      <!-- 3. カテゴリ -->
+      <div class="cat-wrap">
+        <div class="sec-label" id="cat-label">カテゴリをタップして登録</div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+
+      <!-- 4. メモ -->
+      <div class="memo-hint" id="memo-hint" onclick="editMemo()">メモを追加...</div>
+
+      <!-- 5. 履歴（スクロール） -->
+      <div class="hist-wrap">
+        <div class="sec-label">直近の履歴　（タップで修正・削除）</div>
+        <div class="card-list" id="hist-list"></div>
+      </div>
+    </div>
+
+    <!-- ════ CALENDAR SCREEN ════ -->
+    <div class="screen" id="screen-calendar">
+      <div class="cal-header">
+        <div class="cal-title" id="cal-title">2026年4月</div>
+        <div style="display:flex;gap:4px">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+          <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+        </div>
+      </div>
+
+      <div class="weekdays">
+        <div class="wd">日</div><div class="wd">月</div><div class="wd">火</div>
+        <div class="wd">水</div><div class="wd">木</div><div class="wd">金</div>
+        <div class="wd">土</div>
+      </div>
+
+      <div class="cal-grid" id="cal-grid"></div>
+
+      <div class="daily-wrap">
+        <!-- Monthly summary -->
+        <div class="month-sum-card" id="month-sum">
+          <div class="ms-row">
+            <span class="ms-lbl">収入</span>
+            <span class="ms-val" id="ms-inc" style="color:var(--income)">¥—</span>
+          </div>
+          <div class="ms-row">
+            <span class="ms-lbl">支出</span>
+            <span class="ms-val" id="ms-exp" style="color:var(--expense)">¥—</span>
+          </div>
+          <div class="ms-row">
+            <span class="ms-lbl">合計</span>
+            <span class="ms-val" id="ms-total">¥—</span>
+          </div>
+          <div class="ms-sep"></div>
+          <div class="ms-row">
+            <span class="ms-lbl">繰越金</span>
+            <span class="ms-val" id="ms-carry" style="color:var(--text2)">¥—</span>
+          </div>
+          <div class="ms-row ms-bal-row">
+            <span class="ms-lbl ms-lbl-bold">残高</span>
+            <span class="ms-val ms-val-lg" id="ms-balance">¥—</span>
+          </div>
+        </div>
+
+        <!-- Day detail -->
+        <div class="sec-label" id="daily-lbl">日付をタップして詳細を表示</div>
+        <div class="card-list" id="daily-list"></div>
+      </div>
+    </div>
+
+    <!-- ════ STATS SCREEN ════ -->
+    <div class="screen" id="screen-stats">
+      <div class="stats-header">
+        <div class="stats-title">統計</div>
+        <div class="period-row">
+          <button class="period-btn active" onclick="setPeriod(this)">月次</button>
+          <button class="period-btn"        onclick="setPeriod(this)">年次</button>
+        </div>
+      </div>
+
+      <div class="stats-scroll">
+        <!-- summary -->
+        <div class="stat-card">
+          <div class="stat-ttl">2026年4月 サマリー</div>
+          <div class="summary-row">
+            <div class="sum-item">
+              <div class="sum-lbl">収入</div>
+              <div class="sum-val" style="color:var(--income)">¥280,000</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-lbl">支出</div>
+              <div class="sum-val" style="color:var(--expense)">¥127,480</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-lbl">貯蓄</div>
+              <div class="sum-val" style="color:var(--primary)">¥152,520</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- bar chart -->
+        <div class="stat-card">
+          <div class="stat-ttl">月次推移（直近6ヶ月）</div>
+          <div class="legend">
+            <div class="legend-dot"><div class="dot" style="background:var(--income)"></div>収入</div>
+            <div class="legend-dot"><div class="dot" style="background:var(--expense)"></div>支出</div>
+          </div>
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+
+        <!-- category breakdown -->
+        <div class="stat-card">
+          <div class="stat-ttl">カテゴリ別支出</div>
+          <div class="cat-bars" id="cat-bars"></div>
+        </div>
+
+        <!-- running balance -->
+        <div class="stat-card">
+          <div class="stat-ttl">月次貯蓄率</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="flex:1;height:14px;background:var(--sep);border-radius:7px;overflow:hidden">
+              <div style="width:54%;height:100%;background:var(--primary);border-radius:7px"></div>
+            </div>
+            <div style="font-size:18px;font-weight:700;color:var(--primary)">54%</div>
+          </div>
+          <div style="font-size:12px;color:var(--text2);margin-top:6px">目標 30% を達成中</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SETTINGS SCREEN ════ -->
+    <div class="screen" id="screen-settings">
+      <div style="padding:4px 20px 10px">
+        <div style="font-size:20px;font-weight:700;color:var(--text1)">設定</div>
+      </div>
+      <div class="settings-scroll">
+        <div class="sg-title">カテゴリ</div>
+        <div class="sg">
+          <div class="si" onclick="openCatMgmt()">
+            <div class="si-icon" style="background:#FFE5E5">✏️</div>
+            <div class="si-lbl">カテゴリを編集・並び替え</div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="si" onclick="openCatMgmt(); setTimeout(()=>openCatEdit(null),50)">
+            <div class="si-icon" style="background:#E5EEFF">➕</div>
+            <div class="si-lbl">カテゴリを追加</div>
+            <div class="si-arrow">›</div>
+          </div>
+
+        </div>
+
+        <div class="sg-title">予算</div>
+        <div class="sg">
+          <div class="si" onclick="openBudgetEdit('monthly')">
+            <div class="si-icon" style="background:#E5FFE9">💰</div>
+            <div class="si-lbl">月次予算</div>
+            <div class="si-val" id="si-budget-val">未設定</div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="si" onclick="openBudgetEdit('alert')">
+            <div class="si-icon" style="background:#FFF5E5">🔔</div>
+            <div class="si-lbl">予算アラート閾値</div>
+            <div class="si-val" id="si-alert-val">80%</div>
+            <div class="si-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="sg-title">定期支出</div>
+        <div class="sg">
+          <div class="si">
+            <div class="si-icon" style="background:#F0E5FF">🔄</div>
+            <div class="si-lbl">固定費を設定</div>
+            <div class="si-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="sg-title">データ</div>
+        <div class="sg">
+          <div class="si">
+            <div class="si-icon" style="background:#E5FFF8">📤</div>
+            <div class="si-lbl">CSVエクスポート</div>
+            <div class="si-arrow">›</div>
+          </div>
+          <div class="si">
+            <div class="si-icon" style="background:#E5F0FF">☁️</div>
+            <div class="si-lbl">iCloudバックアップ</div>
+            <div class="si-val">オン</div>
+            <div class="si-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="sg-title">アプリ情報</div>
+        <div class="sg">
+          <div class="si">
+            <div class="si-icon" style="background:#F2F2F7">🚀</div>
+            <div class="si-lbl">爆速家計簿</div>
+            <div class="si-val">v1.0.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="switchTab('input')"    id="nav-input">
+        <div class="nav-icon">⌨️</div>
+        <div class="nav-label">入力</div>
+      </div>
+      <div class="nav-item" onclick="switchTab('calendar')" id="nav-calendar">
+        <div class="nav-icon">📅</div>
+        <div class="nav-label">カレンダー</div>
+      </div>
+      <div class="nav-item" onclick="switchTab('stats')"    id="nav-stats">
+        <div class="nav-icon">📊</div>
+        <div class="nav-label">統計</div>
+      </div>
+      <div class="nav-item" onclick="switchTab('settings')" id="nav-settings">
+        <div class="nav-icon">⚙️</div>
+        <div class="nav-label">設定</div>
+      </div>
+    </div>
+  </div><!-- /app -->
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ════ TRANSACTION EDIT OVERLAY ════ -->
+  <div class="full-overlay" id="edit-overlay">
+    <div class="full-header">
+      <button class="fh-btn danger" onclick="deleteAndClose()">削除</button>
+      <div class="full-header-title">取引を編集</div>
+      <button class="fh-btn" onclick="saveEdit()">保存</button>
+    </div>
+
+    <div class="edit-scroll">
+      <!-- 支出/収入 -->
+      <div class="edit-sec">
+        <div class="type-toggle" style="margin:0 0 0 0">
+          <button class="toggle-btn" id="edit-btn-exp" onclick="setEditType('expense')">支出</button>
+          <button class="toggle-btn" id="edit-btn-inc" onclick="setEditType('income')">収入</button>
+        </div>
+      </div>
+
+      <!-- 金額 -->
+      <div class="edit-sec">
+        <div class="edit-lbl">金額</div>
+        <div class="edit-amount-card">
+          <span class="edit-yen">¥</span>
+          <input class="edit-amt-input" id="edit-amt"
+            type="number" inputmode="decimal" placeholder="0" min="0">
+        </div>
+      </div>
+
+      <!-- カテゴリ -->
+      <div class="edit-sec">
+        <div class="edit-lbl">カテゴリ</div>
+        <div class="edit-cat-grid" id="edit-cat-grid"></div>
+      </div>
+
+      <!-- メモ -->
+      <div class="edit-sec">
+        <div class="edit-lbl">メモ</div>
+        <input class="edit-field" id="edit-memo"
+          type="text" placeholder="メモ（任意）" maxlength="50">
+      </div>
+
+      <!-- 日付 -->
+      <div class="edit-sec">
+        <div class="edit-lbl">日付</div>
+        <input class="edit-field edit-date" id="edit-date" type="date">
+      </div>
+    </div>
+
+    <div class="edit-actions">
+      <button class="sa-btn sa-cancel" onclick="closeEditOverlay()">キャンセル</button>
+      <button class="sa-btn sa-primary" onclick="saveEdit()">保存する</button>
+    </div>
+  </div>
+  <!-- ════ CATEGORY MANAGEMENT ════ -->
+  <div class="full-overlay" id="cat-mgmt-overlay">
+    <div class="full-header">
+      <button class="fh-btn" onclick="closeCatMgmt()">完了</button>
+      <div class="full-header-title">カテゴリ管理</div>
+      <button class="fh-btn" onclick="openCatEdit(null)">＋ 追加</button>
+    </div>
+    <div class="cat-tab-row">
+      <button class="cat-tab active" id="cat-tab-exp" onclick="setCatTab('expense')">支出</button>
+      <button class="cat-tab"        id="cat-tab-inc" onclick="setCatTab('income')">収入</button>
+    </div>
+    <div class="cat-mgmt-scroll" id="cat-mgmt-list"></div>
+  </div>
+
+  <!-- ════ CATEGORY EDIT SHEET ════ -->
+  <div class="overlay" id="cat-edit-overlay" onclick="closeCatEdit(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="cat-edit-title">カテゴリを追加</div>
+      <div class="cat-edit-body">
+        <div class="cat-edit-row">
+          <div class="cat-edit-preview" id="cat-edit-preview">❓</div>
+          <input class="cat-edit-emoji-input" id="cat-edit-emoji"
+            type="text" placeholder="絵文字を入力（例：🍜）" maxlength="4"
+            oninput="syncEmojiPreview()">
+        </div>
+        <input class="cat-edit-name-input" id="cat-edit-name"
+          type="text" placeholder="カテゴリ名（例：食費）" maxlength="12">
+      </div>
+      <div class="sheet-actions">
+        <button class="sa-btn sa-primary" onclick="saveCatEdit()">保存する</button>
+        <button class="sa-btn sa-cancel"  onclick="closeCatEdit()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+  <!-- ════ BUDGET EDIT SHEET ════ -->
+  <div class="overlay" id="budget-edit-overlay" onclick="closeBudgetEdit(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="budget-edit-title">月次予算を設定</div>
+      <div style="margin-bottom:16px">
+        <div class="edit-amount-card">
+          <span class="edit-yen" id="budget-edit-prefix">¥</span>
+          <input id="budget-edit-input" class="edit-amt-input"
+            type="number" inputmode="decimal" min="0"
+            style="font-size:28px;letter-spacing:-1px">
+          <span id="budget-edit-suffix" style="font-size:22px;font-weight:300;color:var(--text2);display:none">%</span>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="sa-btn sa-primary" onclick="saveBudgetEdit()">保存する</button>
+        <button class="sa-btn sa-cancel"  onclick="closeBudgetEdit()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /frame -->
+
+<script>
+// ─────────── UTILS (先に定義) ───────────
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtAmt(n) { return n.toLocaleString('ja-JP'); }
+
+// ─────────── DATA ───────────
+const SEED_TXNS = [
+  // 4月27日
+  { id: 1, type:'expense', cat:'食費',   emoji:'🍜', amt:1200,   date:'2026-04-27', memo:'昼食' },
+  { id: 2, type:'expense', cat:'交通費', emoji:'🚃', amt:380,    date:'2026-04-27', memo:'' },
+  { id: 3, type:'expense', cat:'カフェ', emoji:'☕', amt:700,    date:'2026-04-27', memo:'コーヒー' },
+  // 4月25日
+  { id: 4, type:'income',  cat:'給与',   emoji:'💰', amt:280000, date:'2026-04-25', memo:'4月分' },
+  { id: 5, type:'expense', cat:'日用品', emoji:'🛒', amt:2340,   date:'2026-04-25', memo:'' },
+  // 4月24日
+  { id: 6, type:'expense', cat:'外食',   emoji:'🍽️', amt:3200,   date:'2026-04-24', memo:'夕食' },
+  // 4月23日
+  { id: 7, type:'expense', cat:'娯楽',   emoji:'🎮', amt:980,    date:'2026-04-23', memo:'' },
+  // 4月22日
+  { id: 8, type:'expense', cat:'食費',   emoji:'🍜', amt:1200,   date:'2026-04-22', memo:'' },
+  // 4月20日
+  { id: 9, type:'expense', cat:'光熱費', emoji:'💡', amt:8500,   date:'2026-04-20', memo:'電気代' },
+  // 4月18日
+  { id:10, type:'expense', cat:'通信費', emoji:'📱', amt:5980,   date:'2026-04-18', memo:'' },
+  // 4月17日
+  { id:11, type:'expense', cat:'交通費', emoji:'🚃', amt:1200,   date:'2026-04-17', memo:'' },
+  { id:12, type:'expense', cat:'外食',   emoji:'🍽️', amt:3300,   date:'2026-04-17', memo:'週末ランチ' },
+  // 4月15日
+  { id:13, type:'expense', cat:'医療',   emoji:'💊', amt:2100,   date:'2026-04-15', memo:'病院' },
+  // 4月12日
+  { id:14, type:'expense', cat:'食費',   emoji:'🍜', amt:1760,   date:'2026-04-12', memo:'' },
+  // 4月10日
+  { id:15, type:'expense', cat:'娯楽',   emoji:'🎮', amt:980,    date:'2026-04-10', memo:'' },
+  // 4月7日
+  { id:16, type:'expense', cat:'外食',   emoji:'🍽️', amt:3200,   date:'2026-04-07', memo:'週末外食' },
+  // 4月5日
+  { id:17, type:'expense', cat:'光熱費', emoji:'💡', amt:12000,  date:'2026-04-05', memo:'ガス代' },
+  // 4月3日
+  { id:18, type:'expense', cat:'食費',   emoji:'🍜', amt:850,    date:'2026-04-03', memo:'' },
+  // 4月1日
+  { id:19, type:'expense', cat:'交通費', emoji:'🚃', amt:1500,   date:'2026-04-01', memo:'' },
+  // 3月（月ナビ動作確認用）
+  { id:20, type:'income',  cat:'給与',   emoji:'💰', amt:280000, date:'2026-03-15', memo:'3月分' },
+  { id:21, type:'expense', cat:'光熱費', emoji:'💡', amt:8500,   date:'2026-03-15', memo:'電気代' },
+  { id:22, type:'expense', cat:'外食',   emoji:'🍽️', amt:4200,   date:'2026-03-22', memo:'' },
+  { id:23, type:'expense', cat:'食費',   emoji:'🍜', amt:3200,   date:'2026-03-05', memo:'' },
+  { id:24, type:'expense', cat:'日用品', emoji:'🛒', amt:1800,   date:'2026-03-10', memo:'' },
+  { id:25, type:'expense', cat:'娯楽',   emoji:'🎮', amt:2100,   date:'2026-03-28', memo:'' },
+];
+
+function loadTxns() {
+  try {
+    const saved = localStorage.getItem('kakebo_txns');
+    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(SEED_TXNS));
+  } catch { return JSON.parse(JSON.stringify(SEED_TXNS)); }
+}
+function saveTxns() {
+  try { localStorage.setItem('kakebo_txns', JSON.stringify(txns)); } catch {}
+}
+function loadNextId() {
+  return parseInt(localStorage.getItem('kakebo_next_id') || '26', 10);
+}
+function saveNextId() {
+  try { localStorage.setItem('kakebo_next_id', String(nextId)); } catch {}
+}
+
+let txns   = loadTxns();
+let nextId = loadNextId();
+
+// ─────────── CATEGORIES ───────────
+const DEFAULT_EXP_CATS = [
+  {id:'e1', name:'食費',    emoji:'🍜'}, {id:'e2',  name:'外食',    emoji:'🍽️'},
+  {id:'e3', name:'カフェ',  emoji:'☕'}, {id:'e4',  name:'交通費',  emoji:'🚃'},
+  {id:'e5', name:'日用品',  emoji:'🛒'}, {id:'e6',  name:'医療',    emoji:'💊'},
+  {id:'e7', name:'衣服',    emoji:'👗'}, {id:'e8',  name:'娯楽',    emoji:'🎮'},
+  {id:'e9', name:'通信費',  emoji:'📱'}, {id:'e10', name:'光熱費',  emoji:'💡'},
+  {id:'e11',name:'家賃',    emoji:'🏠'}, {id:'e12', name:'その他',  emoji:'📝'},
+];
+const DEFAULT_INC_CATS = [
+  {id:'i1', name:'給与',    emoji:'💰'}, {id:'i2',  name:'副業',    emoji:'💼'},
+  {id:'i3', name:'ボーナス',emoji:'🎁'}, {id:'i4',  name:'投資',    emoji:'📈'},
+  {id:'i5', name:'臨時収入',emoji:'🪙'}, {id:'i6',  name:'その他',  emoji:'📝'},
+];
+
+function loadCats(type) {
+  try {
+    const key   = type === 'expense' ? 'kakebo_cats_exp' : 'kakebo_cats_inc';
+    const saved = localStorage.getItem(key);
+    const def   = type === 'expense' ? DEFAULT_EXP_CATS : DEFAULT_INC_CATS;
+    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(def));
+  } catch {
+    return JSON.parse(JSON.stringify(type === 'expense' ? DEFAULT_EXP_CATS : DEFAULT_INC_CATS));
+  }
+}
+function saveCats() {
+  try {
+    localStorage.setItem('kakebo_cats_exp', JSON.stringify(expCats));
+    localStorage.setItem('kakebo_cats_inc', JSON.stringify(incCats));
+  } catch {}
+}
+
+let expCats = loadCats('expense');
+let incCats = loadCats('income');
+
+const monthlyData = [
+  {m:'11月', inc:280000, exp:145000},
+  {m:'12月', inc:280000, exp:198000},
+  {m:'1月',  inc:280000, exp:132000},
+  {m:'2月',  inc:280000, exp:118000},
+  {m:'3月',  inc:280000, exp:156000},
+  {m:'4月',  inc:280000, exp:127480},
+];
+const catData = [
+  {emoji:'🏠', name:'家賃',   amt:75000},
+  {emoji:'🍜', name:'食費',   amt:22000},
+  {emoji:'🍽️', name:'外食',   amt:15800},
+  {emoji:'🚃', name:'交通費', amt:8400},
+  {emoji:'📱', name:'通信費', amt:5980},
+  {emoji:'🛒', name:'日用品', amt:4300},
+];
+
+// ─────────── STATE ───────────
+let curType    = 'expense';
+let amtStr     = '';
+let curMemo    = '';
+let selId      = null;
+let calYear    = 2026;
+let calMonth   = 4; // 1-indexed
+let selDate    = null;
+
+// ─────────── INIT ───────────
+function init() {
+  renderHist();
+  renderCats();
+  renderCalendar();
+  renderBarChart();
+  renderCatBars();
+  renderBudgetBar();
+  document.getElementById('si-budget-val').textContent =
+    budget.monthly ? `¥${budget.monthly.toLocaleString()}` : '未設定';
+  document.getElementById('si-alert-val').textContent = `${budget.alertPct}%`;
+}
+
+// ─────────── TYPE TOGGLE ───────────
+function setType(t) {
+  curType = t;
+  const e = document.getElementById('btn-exp');
+  const i = document.getElementById('btn-inc');
+  if (t === 'expense') {
+    e.className = 'toggle-btn on-expense'; i.className = 'toggle-btn';
+  } else {
+    i.className = 'toggle-btn on-income';  e.className = 'toggle-btn';
+  }
+  document.getElementById('cat-label').textContent =
+    t === 'expense' ? '支出カテゴリをタップして登録' : '収入カテゴリをタップして登録';
+  renderCats();
+}
+
+// ─────────── NUMPAD ───────────
+function nk(v) {
+  if (v === '.' && amtStr.includes('.')) return;
+  if (v === '00' && !amtStr) return;
+  if (amtStr === '0' && v !== '.') { amtStr = v; }
+  else if (amtStr.length < 10)     { amtStr += v; }
+  updateAmt();
+}
+function back() {
+  amtStr = amtStr.slice(0, -1);
+  updateAmt();
+}
+function clearAmt() {
+  amtStr = '';
+  updateAmt();
+}
+function updateAmt() {
+  const el = document.getElementById('amt-disp');
+  if (!amtStr) {
+    el.textContent = '0';
+    el.classList.remove('lit');
+  } else {
+    const n = parseFloat(amtStr);
+    el.textContent = isNaN(n) ? amtStr : n.toLocaleString('ja-JP');
+    el.classList.add('lit');
+  }
+}
+function needCat() {
+  if (!amtStr || parseFloat(amtStr) === 0) { toast('金額を入力してください'); return; }
+  toast('↑ カテゴリをタップして登録');
+}
+
+// ─────────── MEMO ───────────
+function editMemo() {
+  const m = prompt('メモを入力（省略可）', curMemo);
+  if (m !== null) {
+    curMemo = m;
+    const h = document.getElementById('memo-hint');
+    h.textContent = curMemo || 'メモを追加...';
+    h.className   = 'memo-hint' + (curMemo ? ' filled' : '');
+  }
+}
+
+// ─────────── REGISTER ───────────
+function register(name, emoji) {
+  const amt = parseFloat(amtStr);
+  if (!amtStr || amt === 0) { toast('金額を入力してください'); return; }
+
+  txns.unshift({
+    id: nextId++, type: curType,
+    cat: name, emoji, amt,
+    date: todayKey(), memo: curMemo,
+  });
+  saveTxns(); saveNextId();
+
+  amtStr = ''; curMemo = '';
+  updateAmt();
+  const h = document.getElementById('memo-hint');
+  h.textContent = 'メモを追加...'; h.className = 'memo-hint';
+
+  renderHist();
+  renderBudgetBar();
+  toast(`${emoji} ${name} ¥${amt.toLocaleString()} を登録しました`);
+  checkBudgetAlert();
+}
+
+// ─────────── HISTORY ───────────
+function renderHist() {
+  const list = document.getElementById('hist-list');
+  const recent = txns.slice(0, 6);
+  if (!recent.length) { list.innerHTML = '<div class="hist-item" style="color:var(--text2);justify-content:center">まだ記録がありません</div>'; return; }
+  list.innerHTML = recent.map(t => histRow(t)).join('');
+}
+
+function fmtDate(dateStr) {
+  const today = todayKey();
+  if (dateStr === today) return '今日';
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+  if (dateStr === yKey) return '昨日';
+  const dt = new Date(dateStr);
+  return `${dt.getMonth()+1}/${dt.getDate()}`;
+}
+
+function histRow(t) {
+  return `<div class="hist-item" onclick="openSheet(${t.id})">
+    <div class="hist-line">
+      <span class="hist-cat">${t.cat}</span>${t.memo ? `<span class="hist-memo"> · ${t.memo}</span>` : ''}
+    </div>
+    <div class="hist-right">
+      <span class="hist-date">${fmtDate(t.date)}</span>
+      <span class="hist-amt ${t.type==='expense'?'exp':'inc'}">${t.type==='expense'?'-':'+'}¥${t.amt.toLocaleString()}</span>
+    </div>
+  </div>`;
+}
+
+// ─────────── CATEGORIES ───────────
+function renderCats() {
+  const cats = curType === 'expense' ? expCats : incCats;
+  document.getElementById('cat-grid').innerHTML = cats.map(c => `
+    <div class="cat-item" onclick="register('${c.name}','${c.emoji}')">
+      <div class="cat-emoji">${c.emoji}</div>
+      <div class="cat-name">${c.name}</div>
+    </div>
+  `).join('');
+}
+
+// ─────────── CATEGORY MANAGEMENT ───────────
+let catMgmtTab = 'expense';
+let catEditId  = null;
+
+function openCatMgmt() {
+  catMgmtTab = 'expense';
+  document.getElementById('cat-tab-exp').classList.add('active');
+  document.getElementById('cat-tab-inc').classList.remove('active');
+  document.getElementById('cat-mgmt-overlay').classList.add('show');
+  renderCatMgmt();
+}
+
+function closeCatMgmt() {
+  document.getElementById('cat-mgmt-overlay').classList.remove('show');
+  renderCats(); // 入力画面のカテゴリを最新に更新
+}
+
+function setCatTab(type) {
+  catMgmtTab = type;
+  document.getElementById('cat-tab-exp').classList.toggle('active', type === 'expense');
+  document.getElementById('cat-tab-inc').classList.toggle('active', type === 'income');
+  renderCatMgmt();
+}
+
+function renderCatMgmt() {
+  const cats = catMgmtTab === 'expense' ? expCats : incCats;
+  const list = document.getElementById('cat-mgmt-list');
+  const items = cats.map((c, i) => `
+    <div class="cmi">
+      <div class="cmi-emoji">${c.emoji}</div>
+      <div class="cmi-name">${c.name}</div>
+      <div class="cmi-btns">
+        <button class="cmi-btn" onclick="moveCat('${c.id}',-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="cmi-btn" onclick="moveCat('${c.id}',1)"  ${i===cats.length-1?'disabled':''}>↓</button>
+        <button class="cmi-btn" onclick="openCatEdit('${c.id}')">✏️</button>
+        <button class="cmi-btn del" onclick="deleteCat('${c.id}')">×</button>
+      </div>
+    </div>
+  `).join('');
+  list.innerHTML = items + `<button class="cat-add-btn" onclick="openCatEdit(null)">＋ カテゴリを追加</button>`;
+}
+
+function moveCat(id, dir) {
+  const cats = catMgmtTab === 'expense' ? expCats : incCats;
+  const i = cats.findIndex(c => c.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= cats.length) return;
+  [cats[i], cats[j]] = [cats[j], cats[i]];
+  saveCats();
+  renderCatMgmt();
+}
+
+function deleteCat(id) {
+  const cats = catMgmtTab === 'expense' ? expCats : incCats;
+  if (cats.length <= 1) { toast('カテゴリは1つ以上必要です'); return; }
+  const i = cats.findIndex(c => c.id === id);
+  if (i < 0) return;
+  const name = cats[i].name;
+  cats.splice(i, 1);
+  saveCats();
+  renderCatMgmt();
+  toast(`${name} を削除しました`);
+}
+
+function openCatEdit(id) {
+  catEditId = id;
+  const cats = catMgmtTab === 'expense' ? expCats : incCats;
+  const cat  = id ? cats.find(c => c.id === id) : null;
+  document.getElementById('cat-edit-title').textContent   = cat ? 'カテゴリを編集' : 'カテゴリを追加';
+  document.getElementById('cat-edit-emoji').value         = cat ? cat.emoji : '';
+  document.getElementById('cat-edit-preview').textContent = cat ? cat.emoji : '❓';
+  document.getElementById('cat-edit-name').value          = cat ? cat.name  : '';
+  document.getElementById('cat-edit-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('cat-edit-name').focus(), 150);
+}
+
+function closeCatEdit(e) {
+  if (!e || e.target === document.getElementById('cat-edit-overlay')) {
+    document.getElementById('cat-edit-overlay').classList.remove('show');
+    catEditId = null;
+  }
+}
+
+function syncEmojiPreview() {
+  const v = document.getElementById('cat-edit-emoji').value.trim();
+  document.getElementById('cat-edit-preview').textContent = v || '❓';
+}
+
+function saveCatEdit() {
+  const emoji = document.getElementById('cat-edit-emoji').value.trim();
+  const name  = document.getElementById('cat-edit-name').value.trim();
+  if (!emoji) { toast('絵文字を入力してください'); return; }
+  if (!name)  { toast('カテゴリ名を入力してください'); return; }
+
+  const cats = catMgmtTab === 'expense' ? expCats : incCats;
+  if (catEditId) {
+    const cat = cats.find(c => c.id === catEditId);
+    if (cat) { cat.emoji = emoji; cat.name = name; }
+  } else {
+    cats.push({ id: `c${Date.now()}`, name, emoji });
+  }
+  saveCats();
+  closeCatEdit();
+  renderCatMgmt();
+  toast(`${emoji} ${name} を保存しました`);
+}
+
+// ─────────── TRANSACTION EDIT OVERLAY ───────────
+let editTxn    = null;
+let editSelCat = null;
+
+function openSheet(id) {          // 履歴・日別詳細から呼ばれる
+  const t = txns.find(x => x.id === id);
+  if (!t) return;
+  editTxn    = { ...t };
+  editSelCat = { name: t.cat, emoji: t.emoji };
+
+  // type toggle
+  document.getElementById('edit-btn-exp').className =
+    'toggle-btn' + (t.type === 'expense' ? ' on-expense' : '');
+  document.getElementById('edit-btn-inc').className =
+    'toggle-btn' + (t.type === 'income'  ? ' on-income'  : '');
+
+  document.getElementById('edit-amt').value  = t.amt;
+  document.getElementById('edit-memo').value = t.memo;
+  document.getElementById('edit-date').value = t.date;
+
+  renderEditCats();
+  document.getElementById('edit-overlay').classList.add('show');
+}
+
+function closeEditOverlay() {
+  document.getElementById('edit-overlay').classList.remove('show');
+  editTxn = null; editSelCat = null;
+}
+
+function setEditType(type) {
+  editTxn.type = type;
+  document.getElementById('edit-btn-exp').className =
+    'toggle-btn' + (type === 'expense' ? ' on-expense' : '');
+  document.getElementById('edit-btn-inc').className =
+    'toggle-btn' + (type === 'income'  ? ' on-income'  : '');
+  // カテゴリが新しい type に存在するか確認
+  const cats = type === 'expense' ? expCats : incCats;
+  if (!cats.find(c => c.name === editSelCat.name)) {
+    editSelCat = { name: cats[0].name, emoji: cats[0].emoji };
+  }
+  renderEditCats();
+}
+
+function renderEditCats() {
+  const cats = editTxn.type === 'expense' ? expCats : incCats;
+  document.getElementById('edit-cat-grid').innerHTML = cats.map(c => {
+    const sel = c.name === editSelCat.name ? ' sel' : '';
+    return `<div class="cat-item${sel}" onclick="selectEditCat('${c.name}','${c.emoji}')">
+      <div class="cat-emoji">${c.emoji}</div>
+      <div class="cat-name">${c.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectEditCat(name, emoji) {
+  editSelCat = { name, emoji };
+  renderEditCats();
+}
+
+function saveEdit() {
+  const amt = parseFloat(document.getElementById('edit-amt').value);
+  if (!amt || isNaN(amt) || amt <= 0) { toast('正しい金額を入力してください'); return; }
+
+  const date = document.getElementById('edit-date').value;
+  if (!date) { toast('日付を選択してください'); return; }
+
+  const t = txns.find(x => x.id === editTxn.id);
+  if (!t) return;
+
+  t.type  = editTxn.type;
+  t.cat   = editSelCat.name;
+  t.emoji = editSelCat.emoji;
+  t.amt   = amt;
+  t.memo  = document.getElementById('edit-memo').value.trim();
+  t.date  = date;
+
+  saveTxns();
+  renderHist();
+  renderCalendar();
+  renderBudgetBar();
+  closeEditOverlay();
+  toast('更新しました');
+}
+
+function deleteAndClose() {
+  if (!editTxn) return;
+  const i = txns.findIndex(x => x.id === editTxn.id);
+  if (i !== -1) {
+    const t = txns.splice(i, 1)[0];
+    saveTxns();
+    toast(`${t.cat}を削除しました`);
+  }
+  renderHist();
+  renderCalendar();
+  renderBudgetBar();
+  closeEditOverlay();
+}
+
+// ─────────── BUDGET ───────────
+function loadBudget() {
+  try {
+    const s = localStorage.getItem('kakebo_budget');
+    return s ? JSON.parse(s) : { monthly: 0, alertPct: 80 };
+  } catch { return { monthly: 0, alertPct: 80 }; }
+}
+function saveBudget() {
+  try { localStorage.setItem('kakebo_budget', JSON.stringify(budget)); } catch {}
+}
+
+let budget = loadBudget();
+let budgetEditMode = null;
+
+function getCurrentMonthExp() {
+  const prefix = todayKey().slice(0, 7);
+  return txns.filter(t => t.type === 'expense' && t.date.startsWith(prefix))
+             .reduce((s, t) => s + t.amt, 0);
+}
+
+function renderBudgetBar() {
+  const wrap = document.getElementById('budget-bar-wrap');
+  if (!budget.monthly) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const exp = getCurrentMonthExp();
+  const pct = Math.min(Math.round(exp / budget.monthly * 100), 999);
+  document.getElementById('budget-bar-lbl').textContent =
+    `今月の支出 ¥${exp.toLocaleString()} / ¥${budget.monthly.toLocaleString()}`;
+  document.getElementById('budget-bar-pct').textContent = `${pct}%`;
+  const fill = document.getElementById('budget-bar-fill');
+  fill.style.width = `${Math.min(pct, 100)}%`;
+  fill.className = 'budget-bar-fill' +
+    (pct >= 100 ? ' over' : pct >= budget.alertPct ? ' warn' : '');
+}
+
+function checkBudgetAlert() {
+  if (!budget.monthly) return;
+  const exp = getCurrentMonthExp();
+  const pct = exp / budget.monthly * 100;
+  if (pct >= 100) toast('⚠️ 今月の予算を超過しました！');
+  else if (pct >= budget.alertPct) toast(`⚠️ 予算の${budget.alertPct}%に達しました`);
+}
+
+function openBudgetEdit(mode) {
+  budgetEditMode = mode;
+  document.getElementById('budget-edit-title').textContent =
+    mode === 'monthly' ? '月次予算を設定' : '予算アラートの閾値（%）';
+  const prefix = document.getElementById('budget-edit-prefix');
+  const suffix = document.getElementById('budget-edit-suffix');
+  const input  = document.getElementById('budget-edit-input');
+  if (mode === 'monthly') {
+    prefix.style.display = ''; suffix.style.display = 'none';
+    input.value = budget.monthly || '';
+    input.placeholder = '200000';
+  } else {
+    prefix.style.display = 'none'; suffix.style.display = '';
+    input.value = budget.alertPct;
+    input.placeholder = '80';
+  }
+  document.getElementById('budget-edit-overlay').classList.add('show');
+  setTimeout(() => input.select(), 150);
+}
+
+function closeBudgetEdit(e) {
+  if (!e || e.target === document.getElementById('budget-edit-overlay'))
+    document.getElementById('budget-edit-overlay').classList.remove('show');
+}
+
+function saveBudgetEdit() {
+  const val = parseFloat(document.getElementById('budget-edit-input').value);
+  if (isNaN(val) || val < 0) { toast('正しい値を入力してください'); return; }
+  if (budgetEditMode === 'monthly') {
+    budget.monthly = val;
+    document.getElementById('si-budget-val').textContent =
+      val ? `¥${val.toLocaleString()}` : '未設定';
+  } else {
+    if (val < 1 || val > 100) { toast('1〜100の値を入力してください'); return; }
+    budget.alertPct = val;
+    document.getElementById('si-alert-val').textContent = `${val}%`;
+  }
+  saveBudget();
+  renderBudgetBar();
+  closeBudgetEdit();
+  toast('保存しました');
+}
+
+// ─────────── CALENDAR ───────────
+
+// 繰越金マップ（前月末残高。将来は txns から自動計算予定）
+const carryOver = {
+  '2026-4': 450000,
+  '2026-3': 298000,
+  '2026-2': 180000,
+  '2026-1': 62000,
+};
+
+// txns から指定年月の日別集計を返す
+function getDayTotals(y, m) {
+  const prefix = `${y}-${String(m).padStart(2,'0')}`;
+  const result = {};
+  txns.forEach(t => {
+    if (!t.date.startsWith(prefix)) return;
+    if (!result[t.date]) result[t.date] = { exp: 0, inc: 0 };
+    if (t.type === 'expense') result[t.date].exp += t.amt;
+    else                      result[t.date].inc += t.amt;
+  });
+  return result;
+}
+
+function renderCalendar() {
+  const y = calYear, m = calMonth;
+  document.getElementById('cal-title').textContent = `${y}年${m}月`;
+
+  const dayTotals = getDayTotals(y, m);
+  const first    = new Date(y, m-1, 1).getDay();
+  const lastDay  = new Date(y, m, 0).getDate();
+  const prevLast = new Date(y, m-1, 0).getDate();
+  const today    = todayKey();
+
+  let html = '';
+  for (let i = first - 1; i >= 0; i--)
+    html += `<div class="cd other"><div class="cd-num">${prevLast - i}</div></div>`;
+
+  for (let d = 1; d <= lastDay; d++) {
+    const key  = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const data = dayTotals[key];
+    const dow  = new Date(y, m-1, d).getDay();
+    let cls = 'cd';
+    if (key === today) cls += ' today';
+    if (dow === 0)     cls += ' sun';
+    if (dow === 6)     cls += ' sat';
+    let extra = '';
+    if (data) {
+      if (data.inc) extra += `<div class="cd-inc">+</div>`;
+      if (data.exp) {
+        const label = data.exp >= 10000
+          ? (data.exp/10000).toFixed(1) + '万'
+          : (data.exp/1000).toFixed(1) + 'k';
+        extra += `<div class="cd-amt">${label}</div>`;
+      }
+    }
+    html += `<div class="${cls}" onclick="selectDay('${key}',${d})">
+      <div class="cd-num">${d}</div>${extra}
+    </div>`;
+  }
+  const total = first + lastDay;
+  const need  = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= need; i++)
+    html += `<div class="cd other"><div class="cd-num">${i}</div></div>`;
+
+  document.getElementById('cal-grid').innerHTML = html;
+  renderMonthSummary();
+}
+
+function renderMonthSummary() {
+  const y = calYear, m = calMonth;
+  const dayTotals = getDayTotals(y, m);
+
+  // txns を単一ソースとして月合計を集計
+  let totalInc = 0, totalExp = 0;
+  Object.values(dayTotals).forEach(v => {
+    totalInc += v.inc;
+    totalExp += v.exp;
+  });
+
+  const net     = totalInc - totalExp;
+  const carry   = carryOver[`${y}-${m}`] ?? 0;
+  const balance = carry + net;
+
+  document.getElementById('ms-inc').textContent   = `¥${totalInc.toLocaleString()}`;
+  document.getElementById('ms-exp').textContent   = `¥${totalExp.toLocaleString()}`;
+  document.getElementById('ms-carry').textContent = `¥${carry.toLocaleString()}`;
+
+  const totalEl = document.getElementById('ms-total');
+  totalEl.textContent  = `${net >= 0 ? '+' : '-'}¥${Math.abs(net).toLocaleString()}`;
+  totalEl.style.color  = net >= 0 ? 'var(--income)' : 'var(--expense)';
+
+  const balEl = document.getElementById('ms-balance');
+  balEl.textContent  = `¥${balance.toLocaleString()}`;
+  balEl.style.color  = balance >= 0 ? 'var(--primary)' : 'var(--expense)';
+}
+
+function changeMonth(d) {
+  calMonth += d;
+  if (calMonth > 12) { calMonth = 1;  calYear++; }
+  if (calMonth < 1)  { calMonth = 12; calYear--; }
+  renderCalendar();
+  selectDay(null, null);
+}
+
+function selectDay(key, day) {
+  selDate = key;
+  const m = calMonth;
+  document.getElementById('daily-lbl').textContent =
+    key ? `${m}月${day}日の記録` : '日付をタップして詳細を表示';
+
+  const dayTxns = key ? txns.filter(t => t.date === key) : [];
+  const dl = document.getElementById('daily-list');
+  if (!key) { dl.innerHTML = ''; return; }
+  if (!dayTxns.length) {
+    dl.innerHTML = '<div class="hist-item" style="color:var(--text2);justify-content:center;font-size:14px">この日の記録はありません</div>';
+    return;
+  }
+  dl.innerHTML = dayTxns.map(t => histRow(t)).join('');
+}
+
+// ─────────── STATS ───────────
+function renderBarChart() {
+  const max = Math.max(...monthlyData.map(d => Math.max(d.inc, d.exp)));
+  document.getElementById('bar-chart').innerHTML = monthlyData.map(d => `
+    <div class="bg-col">
+      <div class="bars">
+        <div class="bar i" style="height:${Math.round(d.inc/max*78)}px"></div>
+        <div class="bar e" style="height:${Math.round(d.exp/max*78)}px"></div>
+      </div>
+      <div class="bl">${d.m}</div>
+    </div>
+  `).join('');
+}
+
+function renderCatBars() {
+  const max = catData[0].amt;
+  document.getElementById('cat-bars').innerHTML = catData.map(c => `
+    <div class="cb-row">
+      <div class="cb-lbl">${c.emoji} ${c.name}</div>
+      <div class="cb-track"><div class="cb-fill" style="width:${Math.round(c.amt/max*100)}%"></div></div>
+      <div class="cb-amt">¥${c.amt.toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+function setPeriod(btn) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ─────────── LAYOUT TOGGLE ───────────
+let layoutB = localStorage.getItem('kakebo_layout') === 'B';
+
+function applyLayout() {
+  const screen = document.getElementById('screen-input');
+  const btn    = document.getElementById('layout-btn');
+  const icon   = document.getElementById('layout-icon');
+  if (layoutB) {
+    screen.classList.add('layout-b');
+    icon.textContent = '📋';
+    btn.querySelector('span:last-child').textContent = '下';
+    btn.classList.add('active');
+  } else {
+    screen.classList.remove('layout-b');
+    icon.textContent = '⌨';
+    btn.querySelector('span:last-child').textContent = '上';
+    btn.classList.remove('active');
+  }
+}
+
+function toggleLayout() {
+  layoutB = !layoutB;
+  try { localStorage.setItem('kakebo_layout', layoutB ? 'B' : 'A'); } catch {}
+  applyLayout();
+  toast(layoutB ? 'レイアウト B：テンキー下' : 'レイアウト A：テンキー上');
+}
+
+// ─────────── NAV ───────────
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`screen-${tab}`).classList.add('active');
+  document.getElementById(`nav-${tab}`).classList.add('active');
+}
+
+// ─────────── TOAST ───────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ─────────── START ───────────
+applyLayout();
+init();
+
+// ─────────── SERVICE WORKER ───────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
