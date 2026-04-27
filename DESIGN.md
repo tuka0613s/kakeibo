@@ -201,7 +201,7 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | 関数 | 役割 |
 |---|---|
 | `init()` | 起動時の初期描画（全画面）・ブラウザモード判定 |
-| `renderHist()` | 入力画面：直近6件の履歴描画 |
+| `renderHist()` | 入力画面：直近4件の履歴描画 |
 | `histRow(t)` | 取引1件の1行HTML生成（履歴・カレンダー・カテゴリ詳細で共通使用） |
 | `renderCats()` | 入力画面：カテゴリグリッド描画 |
 | `renderBudgetBar()` | 入力画面：予算進捗バー更新 |
