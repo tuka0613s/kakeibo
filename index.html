@@ -986,6 +986,11 @@
           <button class="period-btn active" onclick="setPeriod(this,'monthly')">月次</button>
           <button class="period-btn"        onclick="setPeriod(this,'yearly')">年次</button>
         </div>
+        <div class="stats-year-nav" id="stats-month-nav">
+          <button class="year-nav-btn" onclick="navigateStatsMonth(-1)">‹</button>
+          <div class="year-nav-lbl" id="stats-month-lbl"></div>
+          <button class="year-nav-btn" onclick="navigateStatsMonth(1)">›</button>
+        </div>
         <div class="stats-year-nav" id="stats-year-nav">
           <button class="year-nav-btn" onclick="navigateStatsYear(-1)">‹</button>
           <div class="year-nav-lbl" id="stats-year-lbl"></div>
@@ -1484,6 +1489,7 @@ function init() {
   if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches)) {
     document.body.classList.add('browser-mode');
   }
+  _updateStatsNav();
   renderHist();
   renderCats();
   renderCalendar();
@@ -2269,34 +2275,47 @@ function getLast6Months() {
 
 // ─────────── STATS STATE ───────────
 let statsPeriod = 'monthly';
-let statsYear   = new Date().getFullYear();
+const _sNow   = new Date();
+let statsYear  = _sNow.getFullYear();
+let statsMonth = _sNow.getMonth() + 1;
+
+function _updateStatsNav() {
+  document.getElementById('stats-month-nav').classList.toggle('show', statsPeriod === 'monthly');
+  document.getElementById('stats-year-nav').classList.toggle('show',  statsPeriod === 'yearly');
+  document.getElementById('stats-month-lbl').textContent = `${statsYear}年${statsMonth}月`;
+  document.getElementById('stats-year-lbl').textContent  = `${statsYear}年`;
+}
 
 function setPeriod(btn, period) {
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   statsPeriod = period;
-  const nav = document.getElementById('stats-year-nav');
-  nav.classList.toggle('show', period === 'yearly');
-  document.getElementById('stats-year-lbl').textContent = `${statsYear}年`;
+  _updateStatsNav();
+  renderStatsSummary(); renderBarChart(); renderCatBars();
+}
+
+function navigateStatsMonth(dir) {
+  const d = new Date(statsYear, statsMonth - 1 + dir, 1);
+  statsYear  = d.getFullYear();
+  statsMonth = d.getMonth() + 1;
+  _updateStatsNav();
   renderStatsSummary(); renderBarChart(); renderCatBars();
 }
 
 function navigateStatsYear(dir) {
   statsYear += dir;
-  document.getElementById('stats-year-lbl').textContent = `${statsYear}年`;
+  _updateStatsNav();
   renderStatsSummary(); renderBarChart(); renderCatBars();
 }
 
 function renderStatsSummary() {
   let inc = 0, exp = 0, ttl, savLbl;
   if (statsPeriod === 'monthly') {
-    const now = new Date();
-    const y = now.getFullYear(), m = now.getMonth() + 1;
-    const prefix = `${y}-${String(m).padStart(2,'0')}`;
+    const prefix = `${statsYear}-${String(statsMonth).padStart(2,'0')}`;
     txns.forEach(t => { if (!t.date.startsWith(prefix)) return; t.type === 'income' ? inc += t.amt : exp += t.amt; });
-    ttl = `${y}年${m}月 サマリー`;
+    ttl = `${statsYear}年${statsMonth}月 サマリー`;
     document.getElementById('savings-ttl').textContent = '月次貯蓄率';
-    savLbl = inc > 0 ? `収入の ${Math.round(Math.max(0,(inc-exp)/inc)*100)}% を貯蓄` : '今月の収入データがありません';
+    savLbl = inc > 0 ? `収入の ${Math.round(Math.max(0,(inc-exp)/inc)*100)}% を貯蓄` : 'この月のデータがありません';
   } else {
     txns.forEach(t => { if (!t.date.startsWith(`${statsYear}-`)) return; t.type === 'income' ? inc += t.amt : exp += t.amt; });
     ttl = `${statsYear}年 サマリー`;
@@ -2315,10 +2334,17 @@ function renderStatsSummary() {
   document.getElementById('stats-savlbl').textContent = savLbl;
 }
 
+function getMonthRange(refY, refM, count) {
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(refY, refM - 1 - (count - 1 - i), 1);
+    return { y: d.getFullYear(), m: d.getMonth() + 1 };
+  });
+}
+
 function renderBarChart() {
   let data, title;
   if (statsPeriod === 'monthly') {
-    data = getLast6Months().map(({ y, m }) => {
+    data = getMonthRange(statsYear, statsMonth, 6).map(({ y, m }) => {
       const prefix = `${y}-${String(m).padStart(2,'0')}`;
       let inc = 0, exp = 0;
       txns.forEach(t => { if (!t.date.startsWith(prefix)) return; t.type === 'income' ? inc += t.amt : exp += t.amt; });
@@ -2351,9 +2377,8 @@ function renderBarChart() {
 function renderCatBars() {
   let prefix, title;
   if (statsPeriod === 'monthly') {
-    const now = new Date();
-    prefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    title = 'カテゴリ別支出（今月）';
+    prefix = `${statsYear}-${String(statsMonth).padStart(2,'0')}`;
+    title = `カテゴリ別支出（${statsYear}年${statsMonth}月）`;
   } else {
     prefix = `${statsYear}-`;
     title = `カテゴリ別支出（${statsYear}年）`;
@@ -2402,13 +2427,13 @@ function renderCatDetail() {
   const name = catDetailName;
   let bars, chartTitle, sumTitle;
   if (statsPeriod === 'monthly') {
-    bars = getLast6Months().map(({ y, m }) => {
+    bars = getMonthRange(statsYear, statsMonth, 6).map(({ y, m }) => {
       const prefix = `${y}-${String(m).padStart(2,'0')}`;
       const amt = txns.filter(t => t.cat === name && t.date.startsWith(prefix)).reduce((s,t) => s+t.amt, 0);
       return { label: m + '月', amt };
     });
     chartTitle = '月次推移（直近6ヶ月）';
-    sumTitle   = '直近6ヶ月';
+    sumTitle   = `${statsYear}年${statsMonth}月 周辺6ヶ月`;
   } else {
     bars = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
@@ -2424,7 +2449,7 @@ function renderCatDetail() {
   const avg     = nonzero > 0 ? Math.round(total / nonzero) : 0;
 
   const filtered = statsPeriod === 'monthly'
-    ? txns.filter(t => t.cat === name && getLast6Months().some(({y,m}) => t.date.startsWith(`${y}-${String(m).padStart(2,'0')}`)))
+    ? txns.filter(t => t.cat === name && getMonthRange(statsYear, statsMonth, 6).some(({y,m}) => t.date.startsWith(`${y}-${String(m).padStart(2,'0')}`)))
     : txns.filter(t => t.cat === name && t.date.startsWith(`${statsYear}-`));
 
   document.getElementById('cat-detail-sum-ttl').textContent   = sumTitle + ' サマリー';
