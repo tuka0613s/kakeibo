@@ -5,9 +5,12 @@
 | レイヤ | 採用技術 | 理由 |
 |---|---|---|
 | UI | HTML / CSS / Vanilla JS | ビルド不要・Mac なしで即動作 |
-| オフライン | Service Worker | PWA 必須要件 |
+| オフライン | Service Worker（Cache First） | PWA 必須要件 |
 | データ | localStorage | シンプル・iOS Safari 対応 |
-| 配布 | PWA（ホーム画面追加） | App Store 不要・Mac 不要 |
+| 配布 | PWA + GitHub Pages | App Store 不要・Mac 不要 |
+
+**公開URL：** https://tuka0613s.github.io/kakeibo/  
+**リポジトリ：** https://github.com/tuka0613s/kakeibo
 
 ---
 
@@ -15,15 +18,16 @@
 
 ```
 kakeibo/
-├── index.html      # アプリ本体（全 CSS・JS を内包）
-├── manifest.json   # PWA マニフェスト
-├── sw.js           # Service Worker
-├── icon-192.png    # PWA アイコン（未生成）
-├── icon-512.png    # PWA アイコン（未生成）
-├── CLAUDE.md       # Claude への開発指示
-├── SPEC.md         # 機能仕様書
-├── DESIGN.md       # 技術設計書（本ファイル）
-└── PROGRESS.md     # 開発進捗
+├── index.html       # アプリ本体（CSS・JS すべて内包）
+├── manifest.json    # PWA マニフェスト
+├── sw.js            # Service Worker（現バージョン: kakebo-v3）
+├── icon-192.png     # PWA アイコン ※未生成
+├── icon-512.png     # PWA アイコン ※未生成
+├── README.md        # プロジェクト概要・インストール手順
+├── CLAUDE.md        # Claude への開発指示（このプロジェクト固有ルール）
+├── SPEC.md          # 機能仕様書
+├── DESIGN.md        # 技術設計書（本ファイル）
+└── PROGRESS.md      # 開発進捗
 ```
 
 ---
@@ -47,29 +51,24 @@ kakeibo/
 ### Category（カテゴリ）
 
 ```json
-{
-  "id":    "e1",
-  "name":  "食費",
-  "emoji": "🍜"
-}
+{ "id": "e1", "name": "食費", "emoji": "🍜" }
 ```
 
-支出・収入それぞれ別配列で管理。`type` フィールドは廃止済み（配列で種別を区別）。
+支出・収入それぞれ別配列で管理（`kakebo_cats_exp` / `kakebo_cats_inc`）。
 
 ### Budget（予算）
 
 ```json
-{
-  "monthly":  200000,
-  "alertPct": 80
-}
+{ "monthly": 200000, "alertPct": 80 }
 ```
-
-`byCat`（カテゴリ別予算）は将来拡張予定。
 
 ### 繰越金
 
-ハードコードマップは廃止済み。`getCarryOver(y, m)` が `initialBalance + 過去取引の収支合計` を動的に返す。
+ハードコードマップは廃止。`getCarryOver(y, m)` が動的に計算する。
+
+```
+繰越金(y月) = initialBalance + Σ(y月より前の全取引の収支)
+```
 
 ---
 
@@ -90,57 +89,66 @@ kakeibo/
 ## 画面構造（index.html）
 
 ```
-.frame
-├── .dynamic-island
+.frame  ← モバイルは全画面・デスクトップ(600px+)はiPhone17モックフレーム
+├── .dynamic-island  ← デスクトップのみ表示
 └── .app
-    ├── .status-bar              # 時刻・バッテリー表示（モック）
-    ├── #screen-input            # 入力画面
-    │   ├── .input-header        # 日付・レイアウトボタン
-    │   ├── .type-toggle         # 支出 / 収入切替（order:1）
-    │   ├── .budget-bar-wrap     # 予算進捗バー（order:2、予算未設定時は非表示）
-    │   ├── .amount-wrap         # 金額表示（order:3）
-    │   ├── .numpad              # テンキー（order:4）
-    │   ├── .cat-wrap            # カテゴリグリッド（order:5）
-    │   ├── .memo-hint           # メモ欄（order:6）
-    │   └── .hist-wrap           # 直近6件履歴（order:7、スクロール）
-    ├── #screen-calendar         # カレンダー画面
-    │   ├── .cal-header          # 月ナビゲーション
-    │   ├── .weekdays            # 曜日行
-    │   ├── .cal-grid            # 日付グリッド
-    │   └── .daily-wrap          # 月次サマリー＋取引リスト
-    ├── #screen-stats            # 統計画面（txns から動的生成）
-    ├── #screen-settings         # 設定画面
-    └── .bottom-nav              # タブバー
+    ├── .status-bar       ← デスクトップのみ表示（モック：9:41 ●●●）
+    ├── #screen-input     # 入力画面
+    │   ├── .input-header
+    │   ├── .type-toggle      (order: 1)
+    │   ├── .budget-bar-wrap  (order: 2)  ← 予算未設定時は非表示
+    │   ├── .amount-wrap      (order: 3)
+    │   ├── .numpad           (order: 4)
+    │   ├── .cat-wrap         (order: 5)
+    │   ├── .memo-hint        (order: 6)
+    │   └── .hist-wrap        (order: 7)  ← スクロール
+    ├── #screen-calendar  # カレンダー画面
+    │   ├── .cal-header
+    │   ├── .weekdays
+    │   ├── .cal-grid
+    │   └── .daily-wrap   ← 月次サマリー + 取引リスト
+    ├── #screen-stats     # 統計画面（txns から動的生成）
+    ├── #screen-settings  # 設定画面
+    └── .bottom-nav       ← Safe Area 対応（env(safe-area-inset-bottom)）
 
 オーバーレイ（z-index 順）
-├── #edit-overlay        # 取引編集（z:450）
-├── #cat-mgmt-overlay    # カテゴリ管理（z:400）
-├── #cat-edit-overlay    # カテゴリ編集シート（z:500）
-├── #budget-edit-overlay # 予算・初期残高入力シート
-└── #csv-export-overlay  # CSVエクスポート選択シート
+├── #edit-overlay        (z: 450)  取引編集・カスタムテンキー内蔵
+├── #cat-mgmt-overlay    (z: 400)  カテゴリ管理
+├── #cat-edit-overlay    (z: 500)  カテゴリ追加・編集シート
+├── #budget-edit-overlay           予算・初期残高入力（3モード共用）
+└── #csv-export-overlay            CSVエクスポート選択シート
 ```
 
 ### レイアウト切り替えの仕組み
 
-`#screen-input` に `.layout-b` クラスを付与し、CSS `order` プロパティで表示順を変更。DOM 操作ゼロ。
+`#screen-input` に `.layout-b` クラスを付与し、CSS `order` で表示順を変更。DOM 操作ゼロ。
 
 ```css
-/* Layout A（デフォルト）: 金額→テンキー→カテゴリ→メモ→履歴 */
-#screen-input .type-toggle      { order: 1; }
-#screen-input .budget-bar-wrap  { order: 2; }
-#screen-input .amount-wrap      { order: 3; }
-#screen-input .numpad           { order: 4; }
-#screen-input .cat-wrap         { order: 5; }
-#screen-input .memo-hint        { order: 6; }
-#screen-input .hist-wrap        { order: 7; }
+/* Layout B 時の上書き */
+#screen-input.layout-b .memo-hint  { order: 4; }
+#screen-input.layout-b .hist-wrap  { order: 5; }
+#screen-input.layout-b .cat-wrap   { order: 6; }
+#screen-input.layout-b .numpad     { order: 7; }
+```
 
-/* Layout B: 金額→メモ→履歴→カテゴリ→テンキー */
-#screen-input.layout-b .budget-bar-wrap { order: 2; }
-#screen-input.layout-b .amount-wrap     { order: 3; }
-#screen-input.layout-b .memo-hint       { order: 4; }
-#screen-input.layout-b .hist-wrap       { order: 5; }
-#screen-input.layout-b .cat-wrap        { order: 6; }
-#screen-input.layout-b .numpad          { order: 7; }
+### モバイル / デスクトップ切り替えの仕組み
+
+デフォルト（モバイル）でフルスクリーン。`min-width: 600px` の時だけモックフレームに切り替え。
+
+```css
+/* デフォルト：全画面（モバイル・PWA） */
+.frame { width: 100%; height: 100dvh; border-radius: 0; }
+.dynamic-island { display: none; }
+.status-bar     { display: none; }
+.bottom-nav { height: calc(56px + env(safe-area-inset-bottom)); }
+
+/* デスクトップのみモックフレーム */
+@media (min-width: 600px) {
+  .frame { width: 393px; height: 852px; border-radius: 54px; }
+  .dynamic-island { display: block; }
+  .status-bar     { display: flex; }
+  .bottom-nav { height: 83px; }
+}
 ```
 
 ---
@@ -175,7 +183,7 @@ kakeibo/
 | `histRow(t)` | 取引1件の1行HTML生成（履歴・カレンダー共通） |
 | `renderCats()` | 入力画面：カテゴリグリッド描画 |
 | `renderBudgetBar()` | 入力画面：予算進捗バー更新 |
-| `renderCalendar()` | カレンダーグリッド描画＋サマリー＋日別ビュー |
+| `renderCalendar()` | カレンダーグリッド＋サマリー＋日別ビューを描画 |
 | `renderMonthSummary()` | 月次サマリーカード（収入・支出・繰越・残高）更新 |
 | `renderMonthTxns()` | カレンダー：当月の全取引一覧を表示（デフォルト） |
 | `refreshDailyView()` | カレンダー：selDate に応じて月全体 or 日別を再描画 |
@@ -188,11 +196,11 @@ kakeibo/
 | 関数 | 役割 |
 |---|---|
 | `register(name, emoji)` | 取引登録・localStorage 保存・各画面更新 |
-| `selectDay(key, day)` | 日タップ：絞り込み表示（同日再タップで月全体に戻る） |
+| `selectDay(key, day)` | 日タップ：絞り込み（同日再タップで月全体に戻る） |
 | `openSheet(id)` | 取引編集オーバーレイを開く |
 | `saveEdit()` / `deleteAndClose()` | 取引の保存・削除（全画面即時更新） |
 | `toggleLayout()` | レイアウト A/B 切り替え・localStorage 保存 |
-| `openBudgetEdit(mode)` | 予算シート表示（`'monthly'` / `'alert'` / `'initial'`） |
+| `openBudgetEdit(mode)` | 予算シート（`'monthly'` / `'alert'` / `'initial'` の3モード共用） |
 | `checkBudgetAlert()` | 登録後に予算閾値チェックしてトースト表示 |
 | `exportCSV(mode)` | `'month'` or `'all'` で BOM 付き CSV をダウンロード |
 | `openCatMgmt()` | カテゴリ管理画面を開く |
@@ -200,21 +208,27 @@ kakeibo/
 
 ---
 
-## Service Worker キャッシュ戦略
+## Service Worker
 
-- **インストール時**：`index.html`・`manifest.json` をキャッシュ
-- **フェッチ時**：Cache First（キャッシュあれば返す、なければネットワーク）
-- **更新時**：`CACHE` 定数のバージョンを上げてキャッシュを入れ替え
+| バージョン | 変更内容 |
+|---|---|
+| kakebo-v1 | 初期版（絶対パス） |
+| kakebo-v2 | GitHub Pages 対応（相対パスに変更） |
+| kakebo-v3 | モバイル全画面対応に伴うキャッシュ更新 |
+
+キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
+更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。
 
 ---
 
-## 今後の設計検討事項
+## 今後の課題
 
-| テーマ | 候補 |
-|---|---|
-| PWA アイコン | SVG を Canvas で PNG 変換 or 手動作成 |
-| 固定費自動登録 | 月初に自動で txns に追加するスケジュール処理 |
-| データ同期 | iCloud Drive 経由の JSON ファイル共有（iOS Safari の File API） |
-| グラフ精度向上 | Canvas API で描画 or Chart.js CDN |
-| 年次統計 | 月次統計の年次版。getLast12Months() を追加 |
-| 通知（予算超過） | Web Push API（iOS 16.4+ 対応） |
+| 優先度 | テーマ | 対応方針 |
+|---|---|---|
+| 高 | PWA アイコン（192px・512px） | Canvas で SVG → PNG 変換、または画像ファイルを手動作成 |
+| 高 | メモ入力カスタムシート | prompt() を廃止し、bottom sheet + テキスト入力に置換 |
+| 中 | 固定費自動登録 | 月初起動時に txns へ自動追加する処理 |
+| 低 | 年次統計 | getLast12Months() を追加し、統計画面の年次タブを実装 |
+| 低 | JSON バックアップ | txns を JSON ファイルとしてダウンロード |
+| 将来 | iCloud 同期 | iOS Safari の File API 経由で JSON 共有 |
+| 将来 | Web Push 通知 | 予算超過時の Push 通知（iOS 16.4+） |
