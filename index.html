@@ -1233,7 +1233,7 @@
   <!-- ════ TRANSACTION EDIT OVERLAY ════ -->
   <div class="full-overlay" id="edit-overlay">
     <div class="full-header">
-      <button class="fh-btn danger" onclick="deleteAndClose()">削除</button>
+      <button class="fh-btn" onclick="closeEditOverlay()">キャンセル</button>
       <div class="full-header-title">取引を編集</div>
       <button class="fh-btn save" onclick="saveEdit()">保存</button>
     </div>
@@ -1299,11 +1299,11 @@
         <div class="edit-lbl">日付</div>
         <input class="edit-field edit-date" id="edit-date" type="date">
       </div>
-    </div>
 
-    <div class="edit-actions">
-      <button class="sa-btn sa-cancel" onclick="closeEditOverlay()">キャンセル</button>
-      <button class="sa-btn sa-primary" onclick="saveEdit()">保存する</button>
+      <!-- 削除（フォーム末尾・区切り線で分離） -->
+      <div style="margin-top:8px;padding-top:12px;border-top:.5px solid var(--sep);padding-bottom:8px">
+        <button class="sa-btn sa-danger" style="width:100%" onclick="deleteAndClose()">この取引を削除</button>
+      </div>
     </div>
   </div>
   <!-- ════ CATEGORY MANAGEMENT ════ -->
