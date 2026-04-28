@@ -671,6 +671,10 @@
       color: var(--primary); cursor: pointer; padding: 4px 0;
     }
     .fh-btn.danger { color: var(--expense); }
+    .fh-btn.save {
+      background: var(--primary); color: #fff;
+      padding: 6px 16px; border-radius: 20px; font-size: 14px;
+    }
 
     .cat-tab-row {
       display: flex;
@@ -1231,7 +1235,7 @@
     <div class="full-header">
       <button class="fh-btn danger" onclick="deleteAndClose()">削除</button>
       <div class="full-header-title">取引を編集</div>
-      <button class="fh-btn" onclick="saveEdit()">保存</button>
+      <button class="fh-btn save" onclick="saveEdit()">保存</button>
     </div>
 
     <div class="edit-scroll">
