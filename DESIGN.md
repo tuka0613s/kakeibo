@@ -127,7 +127,7 @@ kakeibo/
 オーバーレイ（z-index 順）
 ├── #cat-mgmt-overlay    (z: 400)  カテゴリ管理
 ├── #cat-detail-overlay  (z: 405)  統計カテゴリ詳細（推移グラフ＋取引履歴）
-├── #edit-overlay        (z: 410)  取引編集・カスタムテンキー内蔵
+├── #edit-overlay        (z: 410)  取引編集・カスタムテンキー内蔵（ヘッダー：キャンセル／保存、フォーム末尾：削除）
 ├── #cat-edit-overlay    (z: 500)  カテゴリ追加・編集シート
 ├── #budget-edit-overlay           予算・初期残高入力（3モード共用）
 ├── #csv-export-overlay            CSV エクスポート / インポート選択シート
