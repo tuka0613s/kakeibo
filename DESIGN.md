@@ -85,9 +85,11 @@ kakeibo/
 | `kakebo_cats_inc` | JSON 配列 | 収入カテゴリ一覧 |
 | `kakebo_budget` | JSON | 予算設定 `{monthly, alertPct}` |
 | `kakebo_initial_balance` | 数値文字列 | 記録開始前の残高（繰越金計算の起点） |
+| `kakebo_updated_at` | ISO 文字列 | データ最終更新日時（txns/cats/budget/balance 変更時に更新） |
 | `gdrive_client_id` | 文字列 | Google OAuth クライアントID（ユーザー入力） |
 | `gdrive_token` | JSON | GIS から取得したアクセストークン `{token, expiry}` |
 | `gdrive_file_id` | 文字列 | Drive 上の `kakeibo-data.json` のファイルID（初回作成後に保存） |
+| `gdrive_last_sync_at` | ISO 文字列 | Drive への最終アップロード成功日時（起動時チェックの基準） |
 
 ---
 
@@ -264,11 +266,14 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | 関数 | 役割 |
 |---|---|
 | `gdriveSyncDebounced()` | `saveTxns()` 呼び出し後に3秒 debounce で `gdriveUpload()` を予約 |
-| `gdriveUpload()` | 全データ（txns・cats・budget・initialBalance）を Drive の JSON ファイルに保存 |
+| `gdriveUpload()` | 全データを Drive の JSON ファイルに保存。成功時に `gdrive_last_sync_at` を更新 |
 | `gdriveDownload()` | Drive の JSON ファイルを読み込み・ローカルデータを上書きして全画面再描画 |
 | `gdriveConnect()` | GIS Token Client でポップアップ認証。トークンを localStorage に保存 |
 | `_getValidToken()` | 有効なトークンを返す。期限切れ時は `prompt:''` でサイレントリフレッシュ |
-| `_gdriveAutoLoad()` | 接続直後に Drive のファイル有無を確認。あれば上書き確認ダイアログ |
+| `_gdriveAutoLoad()` | 接続直後に Drive のファイル有無を確認。あれば競合確認シートを表示 |
+| `_gdriveStartupCheck()` | 起動3秒後に Drive の `modifiedTime` を軽量チェック。`gdrive_last_sync_at` より新しければトースト通知 |
+| `showDriveConflictSheet()` | 競合確認シートを表示（バックアップして読み込む / そのまま読み込む / キャンセル） |
+| `downloadBackupJSON()` | 現在の全データを `kakeibo-backup-日時.json` としてダウンロード |
 | `gdriveDisconnect()` | トークン失効・localStorage クリア・UI リセット |
 | `openGdriveSheet()` / `closeGdriveSheet()` | Google Drive シートの開閉 |
 | `renderGdriveSheet()` | 接続状態に応じてシート内 UI を動的描画 |
