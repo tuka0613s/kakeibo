@@ -1170,10 +1170,10 @@
             <div class="si-lbl" style="color:var(--expense)">全データを消去</div>
             <div class="si-arrow" style="color:var(--expense)">›</div>
           </div>
-          <div class="si si-disabled">
+          <div class="si" onclick="openGdriveSheet()">
             <div class="si-icon" style="background:#E5F0FF">☁️</div>
-            <div class="si-lbl">iCloudバックアップ</div>
-            <div class="si-val">近日公開</div>
+            <div class="si-lbl">Google Drive 同期</div>
+            <div class="si-val" id="gdrive-status-lbl">未接続</div>
             <div class="si-arrow">›</div>
           </div>
         </div>
@@ -1188,7 +1188,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.2.0</div>
+            <div class="si-val">v1.3.0</div>
           </div>
         </div>
       </div>
@@ -1422,6 +1422,16 @@
     </div>
   </div>
 
+  <!-- ════ GOOGLE DRIVE SHEET ════ -->
+  <div class="overlay" id="gdrive-sheet-overlay" onclick="closeGdriveSheet(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Google Drive 同期</div>
+      <div id="gdrive-sheet-body" style="margin-bottom:8px"></div>
+      <div class="sheet-actions" id="gdrive-sheet-actions"></div>
+    </div>
+  </div>
+
   <!-- ════ CONFIRM SHEET ════ -->
   <div class="overlay" id="confirm-overlay" onclick="closeConfirmSheet(event)">
     <div class="sheet" onclick="event.stopPropagation()">
@@ -1487,6 +1497,7 @@ function loadTxns() {
 }
 function saveTxns() {
   try { localStorage.setItem('kakebo_txns', JSON.stringify(txns)); } catch {}
+  gdriveSyncDebounced();
 }
 function loadNextId() {
   return parseInt(localStorage.getItem('kakebo_next_id') || '1', 10);
@@ -1564,6 +1575,7 @@ function init() {
     budget.monthly ? `¥${budget.monthly.toLocaleString()}` : '未設定';
   document.getElementById('si-alert-val').textContent = `${budget.alertPct}%`;
   document.getElementById('si-balance-val').textContent = `¥${initialBalance.toLocaleString()}`;
+  renderGdriveStatusLbl();
 }
 
 // ─────────── TYPE TOGGLE ───────────
@@ -2747,6 +2759,297 @@ function toast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ─────────── GOOGLE DRIVE SYNC ───────────
+const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILE  = 'kakeibo-data.json';
+let _gdriveSaveTimer = null;
+let _gdriveUploading = false;
+let _gTokenClient    = null;
+let _gTokenPending   = null; // { resolve }
+
+function _gdriveClientId()  { return localStorage.getItem('gdrive_client_id') || ''; }
+function _gdriveTokenData() { try { return JSON.parse(localStorage.getItem('gdrive_token') || 'null'); } catch { return null; } }
+function gdriveConnected()  { const t = _gdriveTokenData(); return !!t && t.expiry > Date.now() + 30000; }
+
+function gdriveSyncDebounced() {
+  if (!_gdriveClientId()) return;
+  clearTimeout(_gdriveSaveTimer);
+  _gdriveSaveTimer = setTimeout(gdriveUpload, 3000);
+}
+
+// GIS ライブラリを動的ロード
+function _loadGIS() {
+  return new Promise(resolve => {
+    if (window.google?.accounts?.oauth2) { resolve(true); return; }
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload  = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+}
+
+function _gisCallback(resp) {
+  if (resp.error) {
+    if (_gTokenPending) { _gTokenPending.resolve(null); _gTokenPending = null; }
+    return;
+  }
+  const td = { token: resp.access_token, expiry: Date.now() + (resp.expires_in || 3600) * 1000 };
+  localStorage.setItem('gdrive_token', JSON.stringify(td));
+  renderGdriveStatusLbl();
+  if (_gTokenPending) { _gTokenPending.resolve(resp.access_token); _gTokenPending = null; }
+}
+
+function _buildTokenClient(clientId) {
+  _gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: GDRIVE_SCOPE,
+    callback: _gisCallback,
+  });
+}
+
+// 有効なトークンを取得（必要なら無音でリフレッシュ）
+function _getValidToken() {
+  return new Promise(async resolve => {
+    const td = _gdriveTokenData();
+    if (td && td.expiry > Date.now() + 60000) { resolve(td.token); return; }
+
+    const loaded = await _loadGIS();
+    if (!loaded) { resolve(null); return; }
+
+    const clientId = _gdriveClientId();
+    if (!clientId) { resolve(null); return; }
+
+    if (!_gTokenClient) _buildTokenClient(clientId);
+    _gTokenPending = { resolve };
+    // prompt:'' = 既認証済みなら無音リフレッシュ（ポップアップなし）
+    _gTokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+async function gdriveUpload() {
+  if (_gdriveUploading) return;
+  const token = await _getValidToken();
+  if (!token) { renderGdriveStatusLbl(); return; }
+  _gdriveUploading = true;
+
+  const payload = JSON.stringify({
+    version: 1, updatedAt: new Date().toISOString(),
+    txns, nextId, expCats, incCats, budget, initialBalance
+  });
+  const bearer = { 'Authorization': `Bearer ${token}` };
+  const fileId = localStorage.getItem('gdrive_file_id');
+
+  try {
+    let res;
+    if (fileId) {
+      res = await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        { method: 'PATCH', headers: { ...bearer, 'Content-Type': 'application/json' }, body: payload }
+      );
+      if (res.status === 404) {
+        localStorage.removeItem('gdrive_file_id');
+        _gdriveUploading = false;
+        return gdriveUpload();
+      }
+    } else {
+      const form = new FormData();
+      form.append('metadata', new Blob(
+        [JSON.stringify({ name: GDRIVE_FILE, parents: ['appDataFolder'] })],
+        { type: 'application/json' }
+      ));
+      form.append('file', new Blob([payload], { type: 'application/json' }));
+      res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST', headers: bearer, body: form
+      });
+      if (res.ok) {
+        const j = await res.json();
+        localStorage.setItem('gdrive_file_id', j.id);
+      }
+    }
+    renderGdriveStatusLbl();
+  } catch {}
+  finally { _gdriveUploading = false; }
+}
+
+async function gdriveDownload() {
+  const token = await _getValidToken();
+  if (!token) { toast('再接続してください'); return; }
+  const bearer = { 'Authorization': `Bearer ${token}` };
+
+  let fileId = localStorage.getItem('gdrive_file_id');
+  if (!fileId) {
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id)`,
+      { headers: bearer }
+    ).catch(() => null);
+    if (!res || !res.ok) { toast('Driveへの接続に失敗しました'); return; }
+    const j = await res.json();
+    if (!j.files?.length) { toast('Driveにデータが見つかりません'); return; }
+    fileId = j.files[0].id;
+    localStorage.setItem('gdrive_file_id', fileId);
+  }
+
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    { headers: bearer }
+  ).catch(() => null);
+  if (!res || !res.ok) { toast('読み込みに失敗しました'); return; }
+
+  const data = await res.json().catch(() => null);
+  if (!data?.txns) { toast('データ形式が正しくありません'); return; }
+
+  txns           = data.txns;
+  nextId         = data.nextId         || 1;
+  expCats        = data.expCats        || JSON.parse(JSON.stringify(DEFAULT_EXP_CATS));
+  incCats        = data.incCats        || JSON.parse(JSON.stringify(DEFAULT_INC_CATS));
+  budget         = data.budget         || { monthly: 0, alertPct: 80 };
+  initialBalance = data.initialBalance || 0;
+
+  clearTimeout(_gdriveSaveTimer);
+  try { localStorage.setItem('kakebo_txns', JSON.stringify(txns)); } catch {}
+  saveNextId(); saveCats(); saveBudget(); saveInitialBalance();
+
+  renderHist(); renderCats(); renderCalendar();
+  renderBarChart(); renderCatBars(); renderStatsSummary(); renderBudgetBar();
+  document.getElementById('si-budget-val').textContent =
+    budget.monthly ? `¥${budget.monthly.toLocaleString()}` : '未設定';
+  document.getElementById('si-alert-val').textContent  = `${budget.alertPct}%`;
+  document.getElementById('si-balance-val').textContent = `¥${initialBalance.toLocaleString()}`;
+
+  closeGdriveSheet();
+  toast('✅ Driveからデータを読み込みました');
+  renderGdriveStatusLbl();
+}
+
+async function gdriveConnect() {
+  const loaded = await _loadGIS();
+  if (!loaded) { toast('ライブラリの読み込みに失敗しました'); return; }
+  const clientId = _gdriveClientId();
+  if (!clientId) { toast('Client IDを入力してください'); return; }
+  _gTokenClient = null; // Client ID 変更対応でリセット
+  _buildTokenClient(clientId);
+  const token = await new Promise(resolve => {
+    _gTokenPending = { resolve };
+    _gTokenClient.requestAccessToken({ prompt: 'select_account' });
+  });
+  if (!token) { toast('接続がキャンセルされました'); return; }
+  toast('✅ Google Driveに接続しました');
+  renderGdriveStatusLbl();
+  renderGdriveSheet();
+  setTimeout(_gdriveAutoLoad, 400);
+}
+
+async function _gdriveAutoLoad() {
+  const token = await _getValidToken();
+  if (!token) return;
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id)`,
+    { headers: { 'Authorization': `Bearer ${token}` } }
+  ).catch(() => null);
+  if (!res || !res.ok) return;
+  const j = await res.json();
+  if (!j.files?.length) { gdriveUpload(); return; }
+  localStorage.setItem('gdrive_file_id', j.files[0].id);
+  showConfirm(
+    'Driveのデータを読み込む',
+    'Driveに既存データがあります。このデバイスのデータをDriveのデータで上書きしますか？',
+    gdriveDownload
+  );
+}
+
+function gdriveDisconnect() {
+  const td = _gdriveTokenData();
+  if (td?.token) {
+    if (window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(td.token, () => {});
+  }
+  ['gdrive_token', 'gdrive_file_id'].forEach(k => localStorage.removeItem(k));
+  _gTokenClient = null;
+  renderGdriveStatusLbl();
+  renderGdriveSheet();
+  toast('Google Driveの接続を解除しました');
+}
+
+function renderGdriveStatusLbl() {
+  const el = document.getElementById('gdrive-status-lbl');
+  if (!el) return;
+  if (!_gdriveClientId()) { el.textContent = '未設定'; return; }
+  if (gdriveConnected()) {
+    const td  = _gdriveTokenData();
+    const min = Math.max(0, Math.round((td.expiry - Date.now()) / 60000));
+    el.textContent = `接続済み（${min}分）`;
+  } else {
+    el.textContent = _gdriveTokenData() ? '期限切れ' : '未接続';
+  }
+}
+
+function openGdriveSheet() {
+  renderGdriveSheet();
+  document.getElementById('gdrive-sheet-overlay').classList.add('show');
+}
+
+function closeGdriveSheet(e) {
+  if (e && e.target !== document.getElementById('gdrive-sheet-overlay')) return;
+  document.getElementById('gdrive-sheet-overlay').classList.remove('show');
+}
+
+function renderGdriveSheet() {
+  const connected = gdriveConnected();
+  const clientId  = _gdriveClientId();
+  const body    = document.getElementById('gdrive-sheet-body');
+  const actions = document.getElementById('gdrive-sheet-actions');
+  if (!body || !actions) return;
+
+  if (!connected) {
+    const expired = !!_gdriveTokenData() && !gdriveConnected();
+    body.innerHTML = `
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">
+        Google DriveのアプリデータにJSONを保存してデバイス間で同期します。<br>
+        Google Cloud Console で取得した <b>Client ID</b> を入力してください。
+      </div>
+      ${expired ? '<div style="font-size:13px;color:var(--expense);margin-bottom:8px">⚠️ トークンの有効期限が切れています。再接続してください。</div>' : ''}
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">Client ID</div>
+      <input id="gdrive-cid-input" class="edit-field" type="text" value="${clientId}"
+        placeholder="〇〇〇.apps.googleusercontent.com" style="margin-bottom:8px;font-size:13px">
+    `;
+    actions.innerHTML = `
+      <button class="sa-btn sa-primary" onclick="saveClientIdAndConnect()">Googleアカウントで接続</button>
+      <button class="sa-btn sa-cancel"  onclick="closeGdriveSheet()">キャンセル</button>
+    `;
+  } else {
+    const td  = _gdriveTokenData();
+    const min = Math.max(0, Math.round((td.expiry - Date.now()) / 60000));
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0 12px">
+        <span style="font-size:24px">✅</span>
+        <div>
+          <div style="font-size:14px;font-weight:600">接続済み</div>
+          <div style="font-size:12px;color:var(--text2)">トークン残り約 ${min} 分</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text2)">
+        取引を登録・編集するたびに 3 秒後に自動でDriveに保存されます。
+      </div>
+    `;
+    actions.innerHTML = `
+      <button class="sa-btn sa-primary" onclick="gdriveUpload().then(()=>toast('✅ Driveに保存しました'))">今すぐ同期</button>
+      <button class="sa-btn" style="background:var(--card);color:var(--primary);border:1.5px solid var(--primary)"
+        onclick="gdriveDownload()">Driveから読み込む</button>
+      <button class="sa-btn" style="background:var(--card);color:var(--text2);border:1.5px solid var(--sep)"
+        onclick="saveClientIdAndConnect()">再接続（トークン更新）</button>
+      <button class="sa-btn sa-cancel" onclick="gdriveDisconnect()">接続を解除</button>
+    `;
+  }
+}
+
+function saveClientIdAndConnect() {
+  const input = document.getElementById('gdrive-cid-input');
+  const val = (input ? input.value : _gdriveClientId()).trim();
+  if (!val) { toast('Client IDを入力してください'); return; }
+  localStorage.setItem('gdrive_client_id', val);
+  gdriveConnect();
 }
 
 // ─────────── START ───────────
