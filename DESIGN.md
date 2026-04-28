@@ -6,7 +6,8 @@
 |---|---|---|
 | UI | HTML / CSS / Vanilla JS | ビルド不要・Mac なしで即動作 |
 | オフライン | Service Worker（Cache First） | PWA 必須要件 |
-| データ | localStorage | シンプル・iOS Safari 対応 |
+| データ（ローカル） | localStorage | シンプル・iOS Safari 対応 |
+| データ（クラウド） | Google Drive API v3 + GIS Token Client | 無料・OAuth 2.0・appDataFolder |
 | 配布 | PWA + GitHub Pages | App Store 不要・Mac 不要 |
 
 **公開URL：** https://tuka0613s.github.io/kakeibo/  
@@ -84,6 +85,9 @@ kakeibo/
 | `kakebo_cats_inc` | JSON 配列 | 収入カテゴリ一覧 |
 | `kakebo_budget` | JSON | 予算設定 `{monthly, alertPct}` |
 | `kakebo_initial_balance` | 数値文字列 | 記録開始前の残高（繰越金計算の起点） |
+| `gdrive_client_id` | 文字列 | Google OAuth クライアントID（ユーザー入力） |
+| `gdrive_token` | JSON | GIS から取得したアクセストークン `{token, expiry}` |
+| `gdrive_file_id` | 文字列 | Drive 上の `kakeibo-data.json` のファイルID（初回作成後に保存） |
 
 ---
 
@@ -125,6 +129,7 @@ kakeibo/
 ├── #cat-edit-overlay    (z: 500)  カテゴリ追加・編集シート
 ├── #budget-edit-overlay           予算・初期残高入力（3モード共用）
 ├── #csv-export-overlay            CSV エクスポート / インポート選択シート
+├── #gdrive-sheet-overlay          Google Drive 同期シート（接続・同期・読み込み）
 ├── #memo-sheet-overlay            メモ入力シート（prompt() の代替）
 └── #confirm-overlay               汎用確認シート（sa-danger ボタン＋コールバック）
 ```
@@ -254,6 +259,38 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `forceUpdate()` | 確認シート経由でキャッシュ削除 → SW解除 → 強制リロード |
 | `toast(msg)` | トースト通知を2.2秒表示 |
 
+### Google Drive 同期
+
+| 関数 | 役割 |
+|---|---|
+| `gdriveSyncDebounced()` | `saveTxns()` 呼び出し後に3秒 debounce で `gdriveUpload()` を予約 |
+| `gdriveUpload()` | 全データ（txns・cats・budget・initialBalance）を Drive の JSON ファイルに保存 |
+| `gdriveDownload()` | Drive の JSON ファイルを読み込み・ローカルデータを上書きして全画面再描画 |
+| `gdriveConnect()` | GIS Token Client でポップアップ認証。トークンを localStorage に保存 |
+| `_getValidToken()` | 有効なトークンを返す。期限切れ時は `prompt:''` でサイレントリフレッシュ |
+| `_gdriveAutoLoad()` | 接続直後に Drive のファイル有無を確認。あれば上書き確認ダイアログ |
+| `gdriveDisconnect()` | トークン失効・localStorage クリア・UI リセット |
+| `openGdriveSheet()` / `closeGdriveSheet()` | Google Drive シートの開閉 |
+| `renderGdriveSheet()` | 接続状態に応じてシート内 UI を動的描画 |
+| `renderGdriveStatusLbl()` | 設定画面の「接続済み（N分）」ラベルを更新 |
+
+#### Drive データ形式
+
+```json
+{
+  "version": 1,
+  "updatedAt": "2026-04-28T12:00:00.000Z",
+  "txns": [...],
+  "nextId": 123,
+  "expCats": [...],
+  "incCats": [...],
+  "budget": { "monthly": 200000, "alertPct": 80 },
+  "initialBalance": 0
+}
+```
+
+ファイルは `appDataFolder`（ユーザーの Drive に表示されない隠し領域）の `kakeibo-data.json` 1ファイルのみ。
+
 ### 統計 State
 
 | 変数 | 初期値 | 役割 |
@@ -302,6 +339,7 @@ const SEED_TXNS = (() => {
 | kakebo-v4 | 強制更新機能追加・各種バグ修正に伴うキャッシュ更新 |
 | kakebo-v5 | 統計ナビ大型化・CSVインポート・カテゴリ詳細ソート・未実装メニュー無効化 |
 | kakebo-v6 | テンキー0キー位置切替・000・演算キー（−/+/=）・ダブルタップ拡大防止・右端スワイプ防止 |
+| kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
 
 キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
 更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  
