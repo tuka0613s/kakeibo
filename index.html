@@ -762,9 +762,17 @@
     .edit-amount-card {
       display: flex; align-items: center; gap: 6px;
       background: var(--card); border-radius: 13px;
-      padding: 8px 16px;
+      padding: 8px 16px; overflow: hidden;
     }
     .edit-yen { font-size: 22px; font-weight: 300; color: var(--text2); }
+    .edit-amt-input {
+      flex: 1; min-width: 0;
+      border: none; outline: none; background: transparent;
+      font-family: inherit; color: var(--text1);
+      -webkit-appearance: none; -moz-appearance: textfield;
+    }
+    .edit-amt-input::-webkit-outer-spin-button,
+    .edit-amt-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .edit-amt-display {
       flex: 1; font-size: 38px; font-weight: 200;
       color: var(--primary); letter-spacing: -2px; line-height: 1;
