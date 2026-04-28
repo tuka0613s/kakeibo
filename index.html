@@ -1505,6 +1505,7 @@ function loadTxns() {
 }
 function saveTxns() {
   try { localStorage.setItem('kakebo_txns', JSON.stringify(txns)); } catch {}
+  try { localStorage.setItem('kakebo_updated_at', new Date().toISOString()); } catch {}
   gdriveSyncDebounced();
 }
 function loadNextId() {
@@ -1546,6 +1547,7 @@ function saveCats() {
   try {
     localStorage.setItem('kakebo_cats_exp', JSON.stringify(expCats));
     localStorage.setItem('kakebo_cats_inc', JSON.stringify(incCats));
+    localStorage.setItem('kakebo_updated_at', new Date().toISOString());
   } catch {}
 }
 
@@ -1584,6 +1586,7 @@ function init() {
   document.getElementById('si-alert-val').textContent = `${budget.alertPct}%`;
   document.getElementById('si-balance-val').textContent = `¥${initialBalance.toLocaleString()}`;
   renderGdriveStatusLbl();
+  setTimeout(_gdriveStartupCheck, 3000);
 }
 
 // ─────────── TYPE TOGGLE ───────────
@@ -2039,7 +2042,10 @@ function loadInitialBalance() {
   return isNaN(v) ? 0 : v;
 }
 function saveInitialBalance() {
-  try { localStorage.setItem('kakebo_initial_balance', String(initialBalance)); } catch {}
+  try {
+    localStorage.setItem('kakebo_initial_balance', String(initialBalance));
+    localStorage.setItem('kakebo_updated_at', new Date().toISOString());
+  } catch {}
 }
 
 let initialBalance = loadInitialBalance();
@@ -2063,7 +2069,10 @@ function loadBudget() {
   } catch { return { monthly: 0, alertPct: 80 }; }
 }
 function saveBudget() {
-  try { localStorage.setItem('kakebo_budget', JSON.stringify(budget)); } catch {}
+  try {
+    localStorage.setItem('kakebo_budget', JSON.stringify(budget));
+    localStorage.setItem('kakebo_updated_at', new Date().toISOString());
+  } catch {}
 }
 
 let budget = loadBudget();
@@ -2877,6 +2886,7 @@ async function gdriveUpload() {
         localStorage.setItem('gdrive_file_id', j.id);
       }
     }
+    if (res.ok) try { localStorage.setItem('gdrive_last_sync_at', new Date().toISOString()); } catch {}
     renderGdriveStatusLbl();
   } catch {}
   finally { _gdriveUploading = false; }
@@ -2961,11 +2971,7 @@ async function _gdriveAutoLoad() {
   const j = await res.json();
   if (!j.files?.length) { gdriveUpload(); return; }
   localStorage.setItem('gdrive_file_id', j.files[0].id);
-  showConfirm(
-    'Driveのデータを読み込む',
-    'Driveに既存データがあります。このデバイスのデータをDriveのデータで上書きしますか？',
-    gdriveDownload
-  );
+  showDriveConflictSheet();
 }
 
 function gdriveDisconnect() {
@@ -3044,7 +3050,7 @@ function renderGdriveSheet() {
     actions.innerHTML = `
       <button class="sa-btn sa-primary" onclick="gdriveUpload().then(()=>toast('✅ Driveに保存しました'))">今すぐ同期</button>
       <button class="sa-btn" style="background:var(--card);color:var(--primary);border:1.5px solid var(--primary)"
-        onclick="gdriveDownload()">Driveから読み込む</button>
+        onclick="showDriveConflictSheet()">Driveから読み込む</button>
       <button class="sa-btn" style="background:var(--card);color:var(--text2);border:1.5px solid var(--sep)"
         onclick="saveClientIdAndConnect()">再接続（トークン更新）</button>
       <button class="sa-btn sa-cancel" onclick="gdriveDisconnect()">接続を解除</button>
@@ -3058,6 +3064,65 @@ function saveClientIdAndConnect() {
   if (!val) { toast('Client IDを入力してください'); return; }
   localStorage.setItem('gdrive_client_id', val);
   gdriveConnect();
+}
+
+// 競合時バックアップ確認シート
+function showDriveConflictSheet() {
+  const body    = document.getElementById('gdrive-sheet-body');
+  const actions = document.getElementById('gdrive-sheet-actions');
+  if (!body || !actions) { gdriveDownload(); return; }
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span style="font-size:20px">⚠️</span>
+      <div style="font-size:14px;font-weight:600">Driveに新しいデータがあります</div>
+    </div>
+    <div style="font-size:13px;color:var(--text2)">
+      現在のデバイスのデータをDriveのデータで上書きします。<br>
+      上書き前に現在のデータをJSONファイルとして保存できます。
+    </div>
+  `;
+  actions.innerHTML = `
+    <button class="sa-btn sa-primary" onclick="downloadBackupJSON();gdriveDownload()">バックアップして読み込む</button>
+    <button class="sa-btn" style="background:var(--card);color:var(--expense);border:1.5px solid var(--expense)"
+      onclick="gdriveDownload()">そのまま読み込む（上書き）</button>
+    <button class="sa-btn sa-cancel" onclick="renderGdriveSheet()">キャンセル</button>
+  `;
+  openGdriveSheet();
+}
+
+// 現在のデータを JSON ファイルとしてダウンロード
+function downloadBackupJSON() {
+  const ts   = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
+  const data = JSON.stringify({
+    version: 1, exportedAt: new Date().toISOString(),
+    txns, nextId, expCats, incCats, budget, initialBalance
+  }, null, 2);
+  const a = Object.assign(document.createElement('a'), {
+    href:     URL.createObjectURL(new Blob([data], { type: 'application/json' })),
+    download: `kakeibo-backup-${ts}.json`,
+  });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// 起動時の軽量チェック（有効トークンがある場合のみ）
+async function _gdriveStartupCheck() {
+  const td = _gdriveTokenData();
+  if (!td || td.expiry <= Date.now()) return; // 期限切れなら何もしない
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id,modifiedTime)`,
+    { headers: { 'Authorization': `Bearer ${td.token}` } }
+  ).catch(() => null);
+  if (!res || !res.ok) return;
+  const j = await res.json();
+  if (!j.files?.length) return;
+  localStorage.setItem('gdrive_file_id', j.files[0].id);
+  const driveTime = j.files[0].modifiedTime;
+  const lastSync  = localStorage.getItem('gdrive_last_sync_at') || '';
+  if (driveTime > lastSync) {
+    toast('☁️ Driveに新しいデータがあります（設定 › Google Drive同期）');
+  }
 }
 
 // ─────────── START ───────────
