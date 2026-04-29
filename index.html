@@ -883,6 +883,36 @@
       }
     }
 
+    /* ─── 横向きロック（iPhone のみ：max-width:767px かつ landscape） ─── */
+    .rotate-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .rotate-icon {
+      font-size: 56px;
+      display: inline-block;
+      transform: rotate(90deg);
+    }
+    .rotate-msg {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text1);
+    }
+    .rotate-sub {
+      font-size: 13px;
+      color: var(--text2);
+    }
+    @media (orientation: landscape) and (max-width: 932px) {
+      .rotate-overlay { display: flex; }
+    }
+
     /* ─── Bottom Sheet Modal ─── */
     .overlay {
       position: absolute;
@@ -929,6 +959,11 @@
 </head>
 <body>
 <div class="frame">
+  <div class="rotate-overlay">
+    <div class="rotate-icon">📱</div>
+    <div class="rotate-msg">縦向きにしてください</div>
+    <div class="rotate-sub">このアプリは縦向き専用です</div>
+  </div>
   <div class="dynamic-island"></div>
 
   <div class="app">
