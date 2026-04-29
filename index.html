@@ -852,6 +852,37 @@
     .budget-bar-fill.warn { background: #FF9500; }
     .budget-bar-fill.over { background: var(--expense); }
 
+    /* ─── iPad / タブレット：モックフレームを外してフルスクリーン ─── */
+    @media (min-width: 768px) and (max-width: 1366px) {
+      body {
+        background: var(--bg);
+        display: block;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      .frame {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .dynamic-island { display: none; }
+      .status-bar { display: none !important; }
+      .bottom-nav {
+        height: calc(56px + env(safe-area-inset-bottom));
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
+    /* iPad横向き（900px+）：コンテンツを中央寄せで読みやすく */
+    @media (min-width: 900px) and (max-width: 1366px) {
+      .frame {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+    }
+
     /* ─── Bottom Sheet Modal ─── */
     .overlay {
       position: absolute;
@@ -1200,7 +1231,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.3.0</div>
+            <div class="si-val">v1.4.0</div>
           </div>
         </div>
       </div>
