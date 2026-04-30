@@ -159,3 +159,4 @@
 | 2026-04-30 | Drive同期フィードバック改善：gdriveUpload()が結果('ok'/'error'/'busy'/'no_token')を返すよう変更。「今すぐ同期」が成功/失敗/同期中/未接続を正確にトースト表示。件数も表示 |
 | 2026-04-30 | ドキュメント更新（SPEC・DESIGN）：iPad対応・横向きオーバーレイ・Drive同期仕様・既知リスク・SWバージョン履歴を反映 |
 | 2026-04-30 | Drive「バックアップ（保存）」と「同期」を分離。gdriveSync()追加（updatedAt比較の双方向同期）。_applyDriveData()共通化。接続直後タイムスタンプ比較で自動判定。FBメッセージを状況・件数付きに改善。v1.5.0 / SW v9 |
+| 2026-04-30 | Drive同期バグ修正：_applyDriveData後にkakebo_updated_atをDriveのupdatedAtに揃えて再同期の無限アップロードを防止。「Driveから読み込む」ボタンのグレー見えを修正（color:text2→text1） |

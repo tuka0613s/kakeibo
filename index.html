@@ -2982,6 +2982,9 @@ function _applyDriveData(data) {
   try { localStorage.setItem('kakebo_txns', JSON.stringify(txns)); } catch {}
   try { localStorage.setItem('gdrive_last_sync_at', new Date().toISOString()); } catch {}
   saveNextId(); saveCats(); saveBudget(); saveInitialBalance();
+  // saveCats等が kakebo_updated_at を NOW に更新してしまうため、
+  // Drive の updatedAt に揃え直す（次回同期で「同じ」と判定させるため）
+  try { localStorage.setItem('kakebo_updated_at', data.updatedAt || new Date().toISOString()); } catch {}
 
   renderHist(); renderCats(); renderCalendar();
   renderBarChart(); renderCatBars(); renderStatsSummary(); renderBudgetBar();
@@ -3235,7 +3238,7 @@ function renderGdriveSheet() {
       <button class="sa-btn sa-primary" onclick="gdriveSync()">同期（新しい方に自動で合わせる）</button>
       <button class="sa-btn" style="background:var(--card);color:var(--primary);border:1.5px solid var(--primary)"
         onclick="gdriveUpload().then(r=>{if(r==='ok')toast('✅ Driveに保存しました（'+txns.length+'件）');else if(r==='busy')toast('⏳ 保存中です。しばらくお待ちください');else if(r==='no_token')toast('❌ 再接続してください');else toast('❌ 保存に失敗しました。通信を確認してください')})">今すぐ保存（ローカル→Drive）</button>
-      <button class="sa-btn" style="background:var(--card);color:var(--text2);border:1.5px solid var(--sep)"
+      <button class="sa-btn" style="background:var(--card);color:var(--text1);border:1.5px solid var(--text2)"
         onclick="showDriveConflictSheet(null)">Driveから読み込む（Drive→ローカル）</button>
       <button class="sa-btn" style="background:var(--card);color:var(--text2);border:1.5px solid var(--sep)"
         onclick="saveClientIdAndConnect()">再接続（トークン更新）</button>
