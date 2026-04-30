@@ -298,9 +298,11 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `gdriveDownload()` | Drive の JSON ファイルを読み込み・ローカルデータを上書きして全画面再描画 |
 | `gdriveConnect()` | GIS Token Client でポップアップ認証。トークンを localStorage に保存 |
 | `_getValidToken()` | 有効なトークンを返す。期限切れ時は `prompt:''` でサイレントリフレッシュ |
-| `_gdriveAutoLoad()` | 接続直後に Drive のファイル有無と中身を確認。Drive が空でローカルにデータあり → 自動アップロード。Drive にデータあり → 競合確認シートを表示 |
+| `gdriveSync()` | 双方向同期。Drive と local の `updatedAt` を比較し、新しい方に自動で合わせる（Drive 新→ダウンロード / Local 新→アップロード / 同→通知） |
+| `_applyDriveData(data)` | Drive から取得した JSON をローカルに反映する共通処理。`_gdriveAutoLoad` / `gdriveDownload` / `gdriveSync` から呼ばれる |
+| `_gdriveAutoLoad()` | 接続直後に Drive の中身を取得してタイムスタンプ比較。Drive 空＋ローカルあり→アップロード / ローカル空＋Drive あり→ダウンロード / 両方あり→タイムスタンプで自動判定 |
 | `_gdriveStartupCheck()` | 起動3秒後に Drive の `modifiedTime` を軽量チェック。`gdrive_last_sync_at` より新しければトースト通知 |
-| `showDriveConflictSheet(driveCnt)` | 競合確認シートを表示。Drive 件数とローカル件数を並記（バックアップして読み込む / そのまま読み込む / キャンセル） |
+| `showDriveConflictSheet(driveCnt)` | 強制読み込み確認シートを表示。Drive 件数とローカル件数を並記（バックアップして読み込む / そのまま読み込む / キャンセル） |
 | `downloadBackupJSON()` | 現在の全データを `kakeibo-backup-日時.json` としてダウンロード |
 | `gdriveDisconnect()` | トークン失効・localStorage クリア・UI リセット |
 | `openGdriveSheet()` / `closeGdriveSheet()` | Google Drive シートの開閉 |
@@ -374,6 +376,7 @@ const SEED_TXNS = (() => {
 | kakebo-v6 | テンキー0キー位置切替・000・演算キー（−/+/=）・ダブルタップ拡大防止・右端スワイプ防止 |
 | kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
 | kakebo-v8 | iPad 11インチ対応（768〜1366px フルスクリーン）・iPhone 横向きオーバーレイ（半透明blur）・Drive 同期バグ修正（Drive空→自動アップロード・競合シートに件数表示） |
+| kakebo-v9 | Drive「同期」と「バックアップ（保存）」を分離。`gdriveSync()` 追加（updatedAt 比較の双方向同期）。`_applyDriveData()` 共通化。接続直後にタイムスタンプ比較で自動判定。各操作のFBメッセージを状況・件数付きに改善 |
 
 キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
 更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  

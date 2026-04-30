@@ -1252,7 +1252,7 @@
           </div>
           <div class="si" onclick="openGdriveSheet()">
             <div class="si-icon" style="background:#E5F0FF">☁️</div>
-            <div class="si-lbl">Google Drive 同期</div>
+            <div class="si-lbl">Google Drive バックアップ</div>
             <div class="si-val" id="gdrive-status-lbl">未接続</div>
             <div class="si-arrow">›</div>
           </div>
@@ -1268,7 +1268,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.4.0</div>
+            <div class="si-val">v1.5.0</div>
           </div>
         </div>
       </div>
@@ -1506,7 +1506,7 @@
   <div class="overlay" id="gdrive-sheet-overlay" onclick="closeGdriveSheet(event)">
     <div class="sheet" onclick="event.stopPropagation()">
       <div class="sheet-handle"></div>
-      <div class="sheet-title">Google Drive 同期</div>
+      <div class="sheet-title">Google Drive バックアップ</div>
       <div id="gdrive-sheet-body" style="margin-bottom:8px"></div>
       <div class="sheet-actions" id="gdrive-sheet-actions"></div>
     </div>
@@ -2969,33 +2969,8 @@ async function gdriveUpload() {
   finally { _gdriveUploading = false; }
 }
 
-async function gdriveDownload() {
-  const token = await _getValidToken();
-  if (!token) { toast('再接続してください'); return; }
-  const bearer = { 'Authorization': `Bearer ${token}` };
-
-  let fileId = localStorage.getItem('gdrive_file_id');
-  if (!fileId) {
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id)`,
-      { headers: bearer }
-    ).catch(() => null);
-    if (!res || !res.ok) { toast('Driveへの接続に失敗しました'); return; }
-    const j = await res.json();
-    if (!j.files?.length) { toast('Driveにデータが見つかりません'); return; }
-    fileId = j.files[0].id;
-    localStorage.setItem('gdrive_file_id', fileId);
-  }
-
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-    { headers: bearer }
-  ).catch(() => null);
-  if (!res || !res.ok) { toast('読み込みに失敗しました'); return; }
-
-  const data = await res.json().catch(() => null);
-  if (!data?.txns) { toast('データ形式が正しくありません'); return; }
-
+// Drive から取得したデータをローカルに反映する共通処理
+function _applyDriveData(data) {
   txns           = data.txns;
   nextId         = data.nextId         || 1;
   expCats        = data.expCats        || JSON.parse(JSON.stringify(DEFAULT_EXP_CATS));
@@ -3005,6 +2980,7 @@ async function gdriveDownload() {
 
   clearTimeout(_gdriveSaveTimer);
   try { localStorage.setItem('kakebo_txns', JSON.stringify(txns)); } catch {}
+  try { localStorage.setItem('gdrive_last_sync_at', new Date().toISOString()); } catch {}
   saveNextId(); saveCats(); saveBudget(); saveInitialBalance();
 
   renderHist(); renderCats(); renderCalendar();
@@ -3013,10 +2989,98 @@ async function gdriveDownload() {
     budget.monthly ? `¥${budget.monthly.toLocaleString()}` : '未設定';
   document.getElementById('si-alert-val').textContent  = `${budget.alertPct}%`;
   document.getElementById('si-balance-val').textContent = `¥${initialBalance.toLocaleString()}`;
-
   closeGdriveSheet();
-  toast('✅ Driveからデータを読み込みました');
   renderGdriveStatusLbl();
+}
+
+// Drive からデータを強制ダウンロード（上書き）
+async function gdriveDownload() {
+  const token = await _getValidToken();
+  if (!token) { toast('❌ 再接続してください'); return; }
+  const bearer = { 'Authorization': `Bearer ${token}` };
+
+  let fileId = localStorage.getItem('gdrive_file_id');
+  if (!fileId) {
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id)`,
+      { headers: bearer }
+    ).catch(() => null);
+    if (!res || !res.ok) { toast('❌ Driveへの接続に失敗しました'); return; }
+    const j = await res.json();
+    if (!j.files?.length) { toast('❌ Driveにデータが見つかりません'); return; }
+    fileId = j.files[0].id;
+    localStorage.setItem('gdrive_file_id', fileId);
+  }
+
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    { headers: bearer }
+  ).catch(() => null);
+  if (!res || !res.ok) { toast('❌ 読み込みに失敗しました'); return; }
+
+  const data = await res.json().catch(() => null);
+  if (!data?.txns) { toast('❌ データ形式が正しくありません'); return; }
+
+  _applyDriveData(data);
+  toast(`✅ Driveから読み込みました（${data.txns.length}件）`);
+}
+
+// タイムスタンプ比較による双方向同期
+async function gdriveSync() {
+  const token = await _getValidToken();
+  if (!token) { toast('❌ 再接続してください'); return; }
+
+  toast('☁️ 同期中...');
+  const bearer = { 'Authorization': `Bearer ${token}` };
+
+  // Drive のファイルを取得
+  let fileId = localStorage.getItem('gdrive_file_id');
+  if (!fileId) {
+    const listRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id)`,
+      { headers: bearer }
+    ).catch(() => null);
+    if (!listRes?.ok) { toast('❌ Driveへの接続に失敗しました'); return; }
+    const j = await listRes.json();
+    if (j.files?.length) {
+      fileId = j.files[0].id;
+      localStorage.setItem('gdrive_file_id', fileId);
+    }
+  }
+
+  // Drive にファイルがない → ローカルをアップロード
+  if (!fileId) {
+    const r = await gdriveUpload();
+    toast(r === 'ok'
+      ? `✅ Driveに保存しました（${txns.length}件）`
+      : '❌ Driveへの保存に失敗しました');
+    return;
+  }
+
+  const dataRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    { headers: bearer }
+  ).catch(() => null);
+  if (!dataRes?.ok) { toast('❌ Driveへの接続に失敗しました'); return; }
+  const driveData = await dataRes.json().catch(() => null);
+  if (!driveData?.txns) { toast('❌ Driveのデータ形式が正しくありません'); return; }
+
+  const driveTime = new Date(driveData.updatedAt || 0).getTime();
+  const localTime = new Date(localStorage.getItem('kakebo_updated_at') || 0).getTime();
+
+  if (driveTime > localTime) {
+    // Drive の方が新しい → ダウンロード
+    _applyDriveData(driveData);
+    toast(`✅ Driveから新しいデータを取得しました（${driveData.txns.length}件）`);
+  } else if (localTime > driveTime) {
+    // ローカルの方が新しい → アップロード
+    const r = await gdriveUpload();
+    toast(r === 'ok'
+      ? `✅ ローカルの最新データをDriveに保存しました（${txns.length}件）`
+      : '❌ Driveへの保存に失敗しました');
+  } else {
+    toast('✅ すでに最新の状態です');
+  }
 }
 
 async function gdriveConnect() {
@@ -3057,17 +3121,41 @@ async function _gdriveAutoLoad() {
   ).catch(() => null);
   if (!dataRes || !dataRes.ok) { showDriveConflictSheet(null); return; }
   const driveData = await dataRes.json().catch(() => null);
-  const driveCnt = driveData?.txns?.length ?? 0;
+  const driveCnt  = driveData?.txns?.length ?? 0;
+  const driveTime = new Date(driveData?.updatedAt || 0).getTime();
+  const localTime = new Date(localStorage.getItem('kakebo_updated_at') || 0).getTime();
 
-  // Drive が空でローカルにデータがある → 迷わずアップロード
+  // Drive が空でローカルにデータがある → アップロード
   if (driveCnt === 0 && txns.length > 0) {
     const r = await gdriveUpload();
     toast(r === 'ok'
-      ? `☁️ Driveにデータを保存しました（${txns.length}件）`
+      ? `☁️ Driveにバックアップしました（${txns.length}件）`
       : '❌ Driveへの保存に失敗しました');
     return;
   }
-  showDriveConflictSheet(driveCnt);
+
+  // ローカルが空でDriveにデータがある → 自動ダウンロード
+  if (txns.length === 0 && driveCnt > 0) {
+    _applyDriveData(driveData);
+    toast(`☁️ Driveからデータを読み込みました（${driveCnt}件）`);
+    return;
+  }
+
+  // 両方にデータがある → タイムスタンプで判定して自動同期
+  if (driveTime > localTime) {
+    _applyDriveData(driveData);
+    toast(`☁️ Driveに新しいデータがあったため読み込みました（${driveCnt}件）`);
+    return;
+  } else if (localTime > driveTime) {
+    const r = await gdriveUpload();
+    toast(r === 'ok'
+      ? `☁️ ローカルが新しいためDriveにバックアップしました（${txns.length}件）`
+      : '❌ Driveへの保存に失敗しました');
+    return;
+  }
+
+  // 同タイムスタンプ（すでに同期済み）→ 何もしない
+  toast('✅ Driveと同期済みです');
 }
 
 function gdriveDisconnect() {
@@ -3140,13 +3228,15 @@ function renderGdriveSheet() {
         </div>
       </div>
       <div style="font-size:13px;color:var(--text2)">
-        取引を登録・編集するたびに 3 秒後に自動でDriveに保存されます。
+        取引を登録・編集するたびに3秒後に自動でDriveにバックアップされます。
       </div>
     `;
     actions.innerHTML = `
-      <button class="sa-btn sa-primary" onclick="gdriveUpload().then(r=>{if(r==='ok')toast('✅ Driveに保存しました（'+txns.length+'件）');else if(r==='busy')toast('⏳ 同期中です。しばらくお待ちください');else if(r==='no_token')toast('❌ 再接続してください');else toast('❌ 保存に失敗しました。通信を確認してください')})">今すぐ同期</button>
+      <button class="sa-btn sa-primary" onclick="gdriveSync()">同期（新しい方に自動で合わせる）</button>
       <button class="sa-btn" style="background:var(--card);color:var(--primary);border:1.5px solid var(--primary)"
-        onclick="showDriveConflictSheet()">Driveから読み込む</button>
+        onclick="gdriveUpload().then(r=>{if(r==='ok')toast('✅ Driveに保存しました（'+txns.length+'件）');else if(r==='busy')toast('⏳ 保存中です。しばらくお待ちください');else if(r==='no_token')toast('❌ 再接続してください');else toast('❌ 保存に失敗しました。通信を確認してください')})">今すぐ保存（ローカル→Drive）</button>
+      <button class="sa-btn" style="background:var(--card);color:var(--text2);border:1.5px solid var(--sep)"
+        onclick="showDriveConflictSheet(null)">Driveから読み込む（Drive→ローカル）</button>
       <button class="sa-btn" style="background:var(--card);color:var(--text2);border:1.5px solid var(--sep)"
         onclick="saveClientIdAndConnect()">再接続（トークン更新）</button>
       <button class="sa-btn sa-cancel" onclick="gdriveDisconnect()">接続を解除</button>
