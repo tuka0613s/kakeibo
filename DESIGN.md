@@ -159,25 +159,53 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 }
 ```
 
-### モバイル / デスクトップ切り替えの仕組み
+### モバイル / iPad / デスクトップ切り替えの仕組み
 
-デフォルト（モバイル）でフルスクリーン。`min-width: 600px` の時だけモックフレームに切り替え。
+デフォルト（モバイル）でフルスクリーン。ブレークポイントで3段階に切り替え。
+
+```
+< 768px          : iPhone（全画面）
+768px〜1366px    : iPad（全画面・モックフレームなし）
+  900px〜1366px  :   └ 横向きは max-width:720px 中央寄せ
+≥ 1367px         : デスクトップ（iPhone モックフレーム）
+```
 
 ```css
-/* デフォルト：全画面（モバイル・PWA） */
-.frame { width: 100%; height: 100dvh; border-radius: 0; }
+/* デフォルト：全画面（iPhone） */
+.frame { width: 100%; height: 100dvh; }
 .dynamic-island { display: none; }
 .status-bar     { display: none; }
 .bottom-nav { height: calc(56px + env(safe-area-inset-bottom)); }
 
-/* デスクトップのみモックフレーム */
+/* デスクトップ：iPhone モックフレーム */
 @media (min-width: 600px) {
   .frame { width: 393px; height: 852px; border-radius: 54px; }
   .dynamic-island { display: block; }
-  .status-bar     { display: flex; }
+  .status-bar { display: flex; }
   .bottom-nav { height: 83px; }
 }
+
+/* iPad（768〜1366px）：モックフレームをキャンセルして全画面に戻す */
+@media (min-width: 768px) and (max-width: 1366px) {
+  body { background: var(--bg); display: block; }
+  .frame { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; }
+  .dynamic-island { display: none; }
+  .status-bar { display: none; }
+  .bottom-nav { height: calc(56px + env(safe-area-inset-bottom)); }
+}
+
+/* iPad 横向き（900px+）：中央寄せ */
+@media (min-width: 900px) and (max-width: 1366px) {
+  .frame { max-width: 720px; margin: 0 auto; }
+}
+
+/* iPhone 横向きロック（max-width:932px かつ landscape） */
+@media (orientation: landscape) and (max-width: 932px) {
+  .rotate-overlay { display: flex; }
+}
 ```
+
+`.rotate-overlay` は半透明（`rgba + backdrop-filter: blur`）で後ろのコンテンツが透けて見える。iPad 横向き（1180px）は `max-width: 932px` に該当しないためオーバーレイは表示されない。
 
 ---
 
@@ -270,9 +298,9 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `gdriveDownload()` | Drive の JSON ファイルを読み込み・ローカルデータを上書きして全画面再描画 |
 | `gdriveConnect()` | GIS Token Client でポップアップ認証。トークンを localStorage に保存 |
 | `_getValidToken()` | 有効なトークンを返す。期限切れ時は `prompt:''` でサイレントリフレッシュ |
-| `_gdriveAutoLoad()` | 接続直後に Drive のファイル有無を確認。あれば競合確認シートを表示 |
+| `_gdriveAutoLoad()` | 接続直後に Drive のファイル有無と中身を確認。Drive が空でローカルにデータあり → 自動アップロード。Drive にデータあり → 競合確認シートを表示 |
 | `_gdriveStartupCheck()` | 起動3秒後に Drive の `modifiedTime` を軽量チェック。`gdrive_last_sync_at` より新しければトースト通知 |
-| `showDriveConflictSheet()` | 競合確認シートを表示（バックアップして読み込む / そのまま読み込む / キャンセル） |
+| `showDriveConflictSheet(driveCnt)` | 競合確認シートを表示。Drive 件数とローカル件数を並記（バックアップして読み込む / そのまま読み込む / キャンセル） |
 | `downloadBackupJSON()` | 現在の全データを `kakeibo-backup-日時.json` としてダウンロード |
 | `gdriveDisconnect()` | トークン失効・localStorage クリア・UI リセット |
 | `openGdriveSheet()` / `closeGdriveSheet()` | Google Drive シートの開閉 |
@@ -345,6 +373,20 @@ const SEED_TXNS = (() => {
 | kakebo-v5 | 統計ナビ大型化・CSVインポート・カテゴリ詳細ソート・未実装メニュー無効化 |
 | kakebo-v6 | テンキー0キー位置切替・000・演算キー（−/+/=）・ダブルタップ拡大防止・右端スワイプ防止 |
 | kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
+| kakebo-v8 | iPad 11インチ対応（768〜1366px フルスクリーン）・iPhone 横向きオーバーレイ（半透明blur）・Drive 同期バグ修正（Drive空→自動アップロード・競合シートに件数表示） |
+
+キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
+更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  
+手動更新：設定 → アプリ情報 → アップデートを確認・強制更新 ボタンで即時クリア可能。
+
+---
+
+## 既知の制約・リスク
+
+| 項目 | 内容 |
+|---|---|
+| iPhone 横向きロック | iOS Safari は `screen.orientation.lock()` 非対応のため Web からは回転を完全に防ぐことができない。PWA の `manifest.json` に `"orientation": "portrait"` を設定済みだが iOS バージョンによっては無視される場合がある。横向き時は半透明オーバーレイで「縦向きにしてください」を表示して代替 |
+| Drive 同期：競合キャンセル後の自動アップロード | 競合確認シートを「キャンセル」で閉じた後にローカルで取引を登録すると、`saveTxns()` → 3秒後の `gdriveUpload()` が走り Drive の既存データを上書きする。競合未解決のまま自動アップロードを止めるフラグは未実装 |
 
 キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
 更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  

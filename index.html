@@ -888,7 +888,9 @@
       display: none;
       position: absolute;
       inset: 0;
-      background: var(--bg);
+      background: rgba(242, 242, 247, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       z-index: 9999;
       flex-direction: column;
       align-items: center;
@@ -2917,9 +2919,9 @@ function _getValidToken() {
 }
 
 async function gdriveUpload() {
-  if (_gdriveUploading) return;
+  if (_gdriveUploading) return 'busy';
   const token = await _getValidToken();
-  if (!token) { renderGdriveStatusLbl(); return; }
+  if (!token) { renderGdriveStatusLbl(); return 'no_token'; }
   _gdriveUploading = true;
 
   const payload = JSON.stringify({
@@ -2956,9 +2958,14 @@ async function gdriveUpload() {
         localStorage.setItem('gdrive_file_id', j.id);
       }
     }
-    if (res.ok) try { localStorage.setItem('gdrive_last_sync_at', new Date().toISOString()); } catch {}
+    if (res.ok) {
+      try { localStorage.setItem('gdrive_last_sync_at', new Date().toISOString()); } catch {}
+      renderGdriveStatusLbl();
+      return 'ok';
+    }
     renderGdriveStatusLbl();
-  } catch {}
+    return 'error';
+  } catch { return 'error'; }
   finally { _gdriveUploading = false; }
 }
 
@@ -3034,14 +3041,33 @@ async function _gdriveAutoLoad() {
   const token = await _getValidToken();
   if (!token) return;
   const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id)`,
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27${GDRIVE_FILE}%27&fields=files(id,modifiedTime)`,
     { headers: { 'Authorization': `Bearer ${token}` } }
   ).catch(() => null);
   if (!res || !res.ok) return;
   const j = await res.json();
+  // Driveにファイルがない → ローカルをアップロード
   if (!j.files?.length) { gdriveUpload(); return; }
   localStorage.setItem('gdrive_file_id', j.files[0].id);
-  showDriveConflictSheet();
+
+  // Driveの中身を確認してから競合判定
+  const dataRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${j.files[0].id}?alt=media`,
+    { headers: { 'Authorization': `Bearer ${token}` } }
+  ).catch(() => null);
+  if (!dataRes || !dataRes.ok) { showDriveConflictSheet(null); return; }
+  const driveData = await dataRes.json().catch(() => null);
+  const driveCnt = driveData?.txns?.length ?? 0;
+
+  // Drive が空でローカルにデータがある → 迷わずアップロード
+  if (driveCnt === 0 && txns.length > 0) {
+    const r = await gdriveUpload();
+    toast(r === 'ok'
+      ? `☁️ Driveにデータを保存しました（${txns.length}件）`
+      : '❌ Driveへの保存に失敗しました');
+    return;
+  }
+  showDriveConflictSheet(driveCnt);
 }
 
 function gdriveDisconnect() {
@@ -3118,7 +3144,7 @@ function renderGdriveSheet() {
       </div>
     `;
     actions.innerHTML = `
-      <button class="sa-btn sa-primary" onclick="gdriveUpload().then(()=>toast('✅ Driveに保存しました'))">今すぐ同期</button>
+      <button class="sa-btn sa-primary" onclick="gdriveUpload().then(r=>{if(r==='ok')toast('✅ Driveに保存しました（'+txns.length+'件）');else if(r==='busy')toast('⏳ 同期中です。しばらくお待ちください');else if(r==='no_token')toast('❌ 再接続してください');else toast('❌ 保存に失敗しました。通信を確認してください')})">今すぐ同期</button>
       <button class="sa-btn" style="background:var(--card);color:var(--primary);border:1.5px solid var(--primary)"
         onclick="showDriveConflictSheet()">Driveから読み込む</button>
       <button class="sa-btn" style="background:var(--card);color:var(--text2);border:1.5px solid var(--sep)"
@@ -3137,18 +3163,24 @@ function saveClientIdAndConnect() {
 }
 
 // 競合時バックアップ確認シート
-function showDriveConflictSheet() {
+function showDriveConflictSheet(driveCnt) {
   const body    = document.getElementById('gdrive-sheet-body');
   const actions = document.getElementById('gdrive-sheet-actions');
   if (!body || !actions) { gdriveDownload(); return; }
+  const countHtml = driveCnt != null
+    ? `<div style="font-size:12px;color:var(--text2);margin:6px 0 2px">
+         Drive: <b>${driveCnt}件</b>　／　このデバイス: <b>${txns.length}件</b>
+       </div>`
+    : '';
   body.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <span style="font-size:20px">⚠️</span>
-      <div style="font-size:14px;font-weight:600">Driveに新しいデータがあります</div>
+      <div style="font-size:14px;font-weight:600">Driveに既存データがあります</div>
     </div>
-    <div style="font-size:13px;color:var(--text2)">
-      現在のデバイスのデータをDriveのデータで上書きします。<br>
-      上書き前に現在のデータをJSONファイルとして保存できます。
+    ${countHtml}
+    <div style="font-size:13px;color:var(--text2);margin-top:8px">
+      Driveから読み込むと現在のデータが上書きされます。<br>
+      バックアップを取ってから読み込むことを推奨します。
     </div>
   `;
   actions.innerHTML = `
