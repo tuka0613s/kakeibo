@@ -3282,7 +3282,7 @@ function showDriveConflictSheet(driveCnt) {
       onclick="gdriveDownload()">そのまま読み込む（上書き）</button>
     <button class="sa-btn sa-cancel" onclick="renderGdriveSheet()">キャンセル</button>
   `;
-  openGdriveSheet();
+  document.getElementById('gdrive-sheet-overlay').classList.add('show');
 }
 
 // 現在のデータを JSON ファイルとしてダウンロード
