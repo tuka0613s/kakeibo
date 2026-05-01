@@ -41,6 +41,7 @@ Since this project uses no build tools, it can be run using any local static fil
     -   Prioritize iOS Safari PWA behavior (handle `pointer-events` and `safe-area-inset` correctly).
 -   **Data:** `txns` in `localStorage` is the single source of truth for transactions.
 -   **Versioning:** Increment the version number in `sw.js` and `index.html` when pushing significant changes.
+-   **test by mcp playwright.
 
 ## Key Files
 
