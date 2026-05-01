@@ -86,6 +86,7 @@
       height: 100%;
       display: flex;
       flex-direction: column;
+      overscroll-behavior: none;
     }
 
     .status-bar { display: none; }
@@ -234,6 +235,8 @@
       overflow-y: auto;
       padding: 0 16px 4px;
       min-height: 60px;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
     .hist-wrap::-webkit-scrollbar { display: none; }
 
@@ -340,7 +343,7 @@
     .nk.span4 { grid-column: span 4; }
 
     /* 0キー位置切替（calcモード：4×4グリッド） */
-    .numpad-grid .btn-000        { display: none; }
+    .numpad-grid .btn-00         { display: none; }
     .numpad-grid .btn-0-calc     { display: none; }
     .numpad-grid .btn-calc-plus  { display: none; }
     .numpad-grid .btn-calc-minus { display: none; }
@@ -351,7 +354,7 @@
         "n7 n8 n9 plus"
         "n4 n5 n6 minus"
         "n1 n2 n3 eq"
-        "n0 k000 bk cl";
+        "n0 k00 bk cl";
     }
     .numpad-grid.calc-layout .nk-7      { grid-area: n7; }
     .numpad-grid.calc-layout .nk-8      { grid-area: n8; }
@@ -366,7 +369,7 @@
     .numpad-grid.calc-layout .nk-clear  { grid-area: cl; }
     .numpad-grid.calc-layout .btn-0-phone  { display: none; }
     .numpad-grid.calc-layout .btn-0-calc   { display: flex; grid-area: n0; }
-    .numpad-grid.calc-layout .btn-000      { display: flex; grid-area: k000; font-size: 15px; }
+    .numpad-grid.calc-layout .btn-00       { display: flex; grid-area: k00; font-size: 15px; }
     .numpad-grid.calc-layout .btn-calc-plus  { display: flex; grid-area: plus; font-size: 24px; }
     .numpad-grid.calc-layout .btn-calc-minus { display: flex; grid-area: minus; font-size: 26px; }
     .numpad-grid.calc-layout .btn-calc-eq    { display: flex; grid-area: eq;   font-size: 22px; }
@@ -444,6 +447,8 @@
       overflow-y: auto;
       padding: 10px 16px;
       min-height: 0;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
     .daily-wrap::-webkit-scrollbar { display: none; }
 
@@ -499,6 +504,8 @@
       overflow-y: auto;
       padding: 0 16px 16px;
       min-height: 0;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
     .stats-scroll::-webkit-scrollbar { display: none; }
 
@@ -555,7 +562,14 @@
     /* category detail overlay */
     #edit-overlay     { z-index: 410; }
     #cat-detail-overlay { z-index: 405; }
-    .cat-detail-scroll { flex: 1; overflow-y: auto; padding: 8px 16px 16px; min-height: 0; }
+    .cat-detail-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px 16px;
+      min-height: 0;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
     .cat-detail-scroll::-webkit-scrollbar { display: none; }
 
     /* disabled settings item */
@@ -578,6 +592,8 @@
       flex: 1;
       overflow-y: auto;
       padding: 8px 16px 16px;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
     .settings-scroll::-webkit-scrollbar { display: none; }
 
@@ -669,6 +685,7 @@
       background: var(--card);
       border-bottom: .5px solid var(--sep);
       flex-shrink: 0;
+      touch-action: none;
     }
     .full-header-title { font-size: 17px; font-weight: 600; color: var(--text1); }
     .fh-btn {
@@ -699,6 +716,8 @@
 
     .cat-mgmt-scroll {
       flex: 1; overflow-y: auto; padding: 0 16px 16px;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
     .cat-mgmt-scroll::-webkit-scrollbar { display: none; }
 
@@ -759,6 +778,8 @@
 
     .edit-scroll {
       flex: 1; overflow-y: auto; padding: 8px 16px 16px;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
     .edit-scroll::-webkit-scrollbar { display: none; }
 
@@ -812,6 +833,7 @@
       background: var(--card);
       border-top: .5px solid var(--sep);
       flex-shrink: 0;
+      touch-action: none;
     }
     .edit-actions .sa-btn { flex: 1; }
 
@@ -1042,7 +1064,7 @@
           <button class="nk d nk-2" onclick="nk('2')">2</button>
           <button class="nk d nk-3" onclick="nk('3')">3</button>
           <button class="nk d btn-0-phone" onclick="nk('0')">0</button>
-          <button class="nk d btn-000" onclick="nk00()">00</button>
+          <button class="nk d btn-00" onclick="nk00()">00</button>
           <button class="nk d btn-0-calc" onclick="nk('0')">0</button>
           <button class="nk a btn-calc-plus"  onclick="nkOp('+')">+</button>
           <button class="nk a btn-calc-minus" onclick="nkOp('-')">−</button>
@@ -3344,16 +3366,6 @@ window.addEventListener('popstate', () => history.pushState(null, '', location.h
 // ─────────── SERVICE WORKER ───────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
-}
-</script>
-</body>
-</html>
-eWorker.register('sw.js').catch(() => {});
-}
-</script>
-</body>
-</html>
-
 }
 </script>
 </body>
