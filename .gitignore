@@ -1,4 +1,4 @@
 .claude/
 .gemini/
-.playwright/
+.playwright-mcp/
 node_modules/
