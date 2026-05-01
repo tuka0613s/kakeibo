@@ -21,7 +21,7 @@
 kakeibo/
 ├── index.html       # アプリ本体（CSS・JS すべて内包）
 ├── manifest.json    # PWA マニフェスト
-├── sw.js            # Service Worker（現バージョン: kakebo-v5）
+├── sw.js            # Service Worker（現バージョン: kakebo-v10）
 ├── icon-192.png     # PWA アイコン ※未生成
 ├── icon-512.png     # PWA アイコン ※未生成
 ├── README.md        # プロジェクト概要・インストール手順
@@ -127,7 +127,7 @@ kakeibo/
 オーバーレイ（z-index 順）
 ├── #cat-mgmt-overlay    (z: 400)  カテゴリ管理
 ├── #cat-detail-overlay  (z: 405)  統計カテゴリ詳細（推移グラフ＋取引履歴）
-├── #edit-overlay        (z: 410)  取引編集・カスタムテンキー内蔵（ヘッダー：キャンセル／保存、フォーム末尾：削除）
+├── #edit-overlay        (z: 410)  取引編集・カスタムテンキー内蔵（ヘッダー：キャンセル、フッター：削除／保存）
 ├── #cat-edit-overlay    (z: 500)  カテゴリ追加・編集シート
 ├── #budget-edit-overlay           予算・初期残高入力（3モード共用）
 ├── #csv-export-overlay            CSV エクスポート / インポート選択シート
@@ -260,10 +260,12 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `toggleLayout()` | レイアウト A/B 切り替え・localStorage 保存 |
 | `applyNumpadStyle()` | 0キー位置（右/下）を DOM に反映 |
 | `toggleNumpadStyle()` | 0キー位置トグル・localStorage 保存 |
-| `nk000()` | 000 ショートカット（calcモード時のみ呼ばれる） |
+| `nk(v)` | 数字/ピリオド入力 |
+| `nk00()` | 00 ショートカット（calcモード時のみ呼ばれる） |
 | `nkOp(op)` | 演算子（`'+'` or `'-'`）を設定。第1オペランドを記憶して入力クリア |
 | `nkEq()` | 演算を実行して結果を `amtStr` に反映。カテゴリタップ時も自動呼出し |
-| `editNk000()` / `editNkOp(op)` / `editNkEq()` | 編集画面の同等関数 |
+| `editNk(v)` / `editNk00()` / `editNkOp(op)` / `editNkEq()` | 編集画面の同等関数 |
+| `editBack()` / `editClearAmt()` | 編集用削除操作 |
 | `switchTab(tab)` | タブ切り替え。calendar/stats タブは切替時に再描画 |
 | `openBudgetEdit(mode)` | 予算シート（`'monthly'` / `'alert'` / `'initial'` の3モード共用） |
 | `checkBudgetAlert()` | 登録後に予算閾値チェックしてトースト表示 |
@@ -298,7 +300,7 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `gdriveDownload()` | Drive の JSON ファイルを読み込み・ローカルデータを上書きして全画面再描画 |
 | `gdriveConnect()` | GIS Token Client でポップアップ認証。トークンを localStorage に保存 |
 | `_getValidToken()` | 有効なトークンを返す。期限切れ時は `prompt:''` でサイレントリフレッシュ |
-| `gdriveSync()` | 双方向同期。Drive と local の `updatedAt` を比較し、新しい方に自動で合わせる（Drive 新→ダウンロード / Local 新→アップロード / 同→通知） |
+| `gdriveSync()` | 双方向同期. Drive と local の `updatedAt` を比較し、新しい方に自動で合わせる（Drive 新→ダウンロード / Local 新→アップロード / 同→通知） |
 | `_applyDriveData(data)` | Drive から取得した JSON をローカルに反映する共通処理。`_gdriveAutoLoad` / `gdriveDownload` / `gdriveSync` から呼ばれる |
 | `_gdriveAutoLoad()` | 接続直後に Drive の中身を取得してタイムスタンプ比較。Drive 空＋ローカルあり→アップロード / ローカル空＋Drive あり→ダウンロード / 両方あり→タイムスタンプで自動判定 |
 | `_gdriveStartupCheck()` | 起動3秒後に Drive の `modifiedTime` を軽量チェック。`gdrive_last_sync_at` より新しければトースト通知 |
@@ -377,6 +379,7 @@ const SEED_TXNS = (() => {
 | kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
 | kakebo-v8 | iPad 11インチ対応（768〜1366px フルスクリーン）・iPhone 横向きオーバーレイ（半透明blur）・Drive 同期バグ修正（Drive空→自動アップロード・競合シートに件数表示） |
 | kakebo-v9 | Drive「同期」と「バックアップ（保存）」を分離。`gdriveSync()` 追加（updatedAt 比較の双方向同期）。`_applyDriveData()` 共通化。接続直後にタイムスタンプ比較で自動判定。各操作のFBメッセージを状況・件数付きに改善 |
+| kakebo-v10 | テンキー 000 → 00 変更。取引編集 UI 整理。画面ズレ防止 CSS 追加 |
 
 キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
 更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  
@@ -390,7 +393,3 @@ const SEED_TXNS = (() => {
 |---|---|
 | iPhone 横向きロック | iOS Safari は `screen.orientation.lock()` 非対応のため Web からは回転を完全に防ぐことができない。PWA の `manifest.json` に `"orientation": "portrait"` を設定済みだが iOS バージョンによっては無視される場合がある。横向き時は半透明オーバーレイで「縦向きにしてください」を表示して代替 |
 | Drive 同期：競合キャンセル後の自動アップロード | 競合確認シートを「キャンセル」で閉じた後にローカルで取引を登録すると、`saveTxns()` → 3秒後の `gdriveUpload()` が走り Drive の既存データを上書きする。競合未解決のまま自動アップロードを止めるフラグは未実装 |
-
-キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
-更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  
-手動更新：設定 → アプリ情報 → アップデートを確認・強制更新 ボタンで即時クリア可能。

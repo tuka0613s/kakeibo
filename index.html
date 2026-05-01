@@ -10,7 +10,13 @@
   <title>爆速家計簿</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { touch-action: manipulation; overscroll-behavior: none; }
+    html, body {
+      touch-action: manipulation;
+      overscroll-behavior: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     :root {
       --primary: #5856D6;
@@ -1268,7 +1274,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.5.0</div>
+            <div class="si-val">v1.6.0</div>
           </div>
         </div>
       </div>
