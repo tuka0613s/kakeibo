@@ -1,0 +1,24 @@
+{
+  "name": "kakeibo",
+  "version": "1.0.0",
+  "description": "「テンキーで金額入力 → カテゴリタップで即登録」を核とした、入力速度最優先の家計簿 PWA。",
+  "main": "sw.js",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tuka0613s/kakeibo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tuka0613s/kakeibo/issues"
+  },
+  "homepage": "https://github.com/tuka0613s/kakeibo#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

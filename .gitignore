@@ -1,1 +1,4 @@
 .claude/
+.gemini/
+.playwright/
+node_modules/

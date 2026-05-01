@@ -21,7 +21,7 @@
 kakeibo/
 ├── index.html       # アプリ本体（CSS・JS すべて内包）
 ├── manifest.json    # PWA マニフェスト
-├── sw.js            # Service Worker（現バージョン: kakebo-v10）
+├── sw.js            # Service Worker（現バージョン: kakebo-v14）
 ├── icon-192.png     # PWA アイコン ※未生成
 ├── icon-512.png     # PWA アイコン ※未生成
 ├── README.md        # プロジェクト概要・インストール手順
@@ -102,11 +102,14 @@ kakeibo/
     ├── .status-bar       ← デスクトップのみ表示（モック：9:41 ●●●）
     ├── #screen-input     # 入力画面
     │   ├── .input-header
+    │   │   ├── #input-date-label (dynamic date)
+    │   │   └── #input-date-sub   (dynamic day of week)
     │   ├── .type-toggle      (order: 1)
     │   ├── .budget-bar-wrap  (order: 2)  ← 予算未設定時は非表示
     │   ├── .amount-wrap      (order: 3)
     │   ├── .numpad           (order: 4)
     │   ├── .cat-wrap         (order: 5)
+    │   │   └── .cat-grid (max-height: 176px, overflow-y: auto)
     │   ├── .memo-hint        (order: 6)
     │   └── .hist-wrap        (order: 7)  ← スクロール
     ├── #screen-calendar  # カレンダー画面
@@ -235,7 +238,8 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 
 | 関数 | 役割 |
 |---|---|
-| `init()` | 起動時の初期描画（全画面）・ブラウザモード判定 |
+| `init()` | 起動時の初期描画（全画面）・ブラウザモード判定・renderInputDate 呼出し |
+| `renderInputDate()` | 入力画面のヘッダー日付と曜日を現在の日時で更新 |
 | `renderHist()` | 入力画面：直近4件の履歴描画 |
 | `histRow(t)` | 取引1件の1行HTML生成（履歴・カレンダー・カテゴリ詳細で共通使用） |
 | `renderCats()` | 入力画面：カテゴリグリッド描画 |
@@ -379,6 +383,7 @@ const SEED_TXNS = (() => {
 | kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
 | kakebo-v8 | iPad 11インチ対応（768〜1366px フルスクリーン）・iPhone 横向きオーバーレイ（半透明blur）・Drive 同期バグ修正（Drive空→自動アップロード・競合シートに件数表示） |
 | kakebo-v9 | Drive「同期」と「バックアップ（保存）」を分離。`gdriveSync()` 追加（updatedAt 比較の双方向同期）。`_applyDriveData()` 共通化。接続直後にタイムスタンプ比較で自動判定。各操作のFBメッセージを状況・件数付きに改善 |
+| kakebo-v14 | 入力画面の日付動的化、カテゴリグリッドのスクロール対応、オーバーレイ微動防止（touch-action: none） |
 | kakebo-v13 | 取引編集画面・スクロールエリアの動作安定化（overscroll-behavior, touch-action） |
 | kakebo-v11 | テンキー 00 統一。取引編集画面のカテゴリ一覧にスクロール導入。アクションボタンをフッターに固定 |
 | kakebo-v10 | テンキー 000 → 00 変更。取引編集 UI 整理。画面ズレ防止 CSS 追加 |

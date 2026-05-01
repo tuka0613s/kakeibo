@@ -294,6 +294,8 @@
       background: var(--card);
       border-radius: 13px;
       padding: 8px;
+      max-height: 176px;
+      overflow-y: auto;
     }
     .cat-item {
       display: flex;
@@ -569,6 +571,7 @@
       min-height: 0;
       overscroll-behavior: none;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
     .cat-detail-scroll::-webkit-scrollbar { display: none; }
 
@@ -674,6 +677,7 @@
       z-index: 400;
       display: none;
       flex-direction: column;
+      touch-action: none;
     }
     .full-overlay.show { display: flex; }
 
@@ -718,6 +722,7 @@
       flex: 1; overflow-y: auto; padding: 0 16px 16px;
       overscroll-behavior: none;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
     .cat-mgmt-scroll::-webkit-scrollbar { display: none; }
 
@@ -780,6 +785,7 @@
       flex: 1; overflow-y: auto; padding: 8px 16px 16px;
       overscroll-behavior: none;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
     .edit-scroll::-webkit-scrollbar { display: none; }
 
@@ -1011,8 +1017,8 @@
 
       <div class="input-header">
         <div>
-          <div class="date-label">2026年4月27日</div>
-          <div class="date-sub">月曜日</div>
+          <div class="date-label" id="input-date-label">2026年4月27日</div>
+          <div class="date-sub" id="input-date-sub">月曜日</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="layout-btn" id="layout-btn" onclick="toggleLayout()" title="レイアウト切替">
@@ -1679,6 +1685,7 @@ function init() {
   if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches)) {
     document.body.classList.add('browser-mode');
   }
+  renderInputDate();
   _updateStatsNav();
   renderHist();
   renderCats();
@@ -1693,6 +1700,16 @@ function init() {
   document.getElementById('si-balance-val').textContent = `¥${initialBalance.toLocaleString()}`;
   renderGdriveStatusLbl();
   setTimeout(_gdriveStartupCheck, 3000);
+}
+
+function renderInputDate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const dt = d.getDate();
+  const dow = ['日','月','火','水','木','金','土'][d.getDay()];
+  document.getElementById('input-date-label').textContent = `${y}年${m}月${dt}日`;
+  document.getElementById('input-date-sub').textContent   = `${dow}曜日`;
 }
 
 // ─────────── TYPE TOGGLE ───────────
