@@ -793,6 +793,7 @@
       display: grid; grid-template-columns: repeat(4,1fr);
       gap: 6px; background: var(--card);
       border-radius: 13px; padding: 8px;
+      max-height: 112px; overflow-y: auto;
     }
     .cat-item.sel { background: var(--primary); }
     .cat-item.sel .cat-name { color: #fff; }
@@ -807,7 +808,9 @@
     .edit-field::placeholder { color: var(--text2); }
 
     .edit-actions {
-      display: flex; gap: 8px; padding: 8px 16px 16px;
+      display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: var(--card);
+      border-top: .5px solid var(--sep);
       flex-shrink: 0;
     }
     .edit-actions .sa-btn { flex: 1; }
@@ -1039,7 +1042,7 @@
           <button class="nk d nk-2" onclick="nk('2')">2</button>
           <button class="nk d nk-3" onclick="nk('3')">3</button>
           <button class="nk d btn-0-phone" onclick="nk('0')">0</button>
-          <button class="nk d btn-000" onclick="nk000()">000</button>
+          <button class="nk d btn-000" onclick="nk00()">00</button>
           <button class="nk d btn-0-calc" onclick="nk('0')">0</button>
           <button class="nk a btn-calc-plus"  onclick="nkOp('+')">+</button>
           <button class="nk a btn-calc-minus" onclick="nkOp('-')">−</button>
@@ -1274,7 +1277,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.6.0</div>
+            <div class="si-val">v1.6.1</div>
           </div>
         </div>
       </div>
@@ -1309,7 +1312,7 @@
     <div class="full-header">
       <button class="fh-btn" onclick="closeEditOverlay()">キャンセル</button>
       <div class="full-header-title">取引を編集</div>
-      <button class="fh-btn save" onclick="saveEdit()">保存</button>
+      <div style="width:44px"></div>
     </div>
 
     <div class="edit-scroll">
@@ -1346,7 +1349,7 @@
             <button class="nk d nk-2" onclick="editNk('2')">2</button>
             <button class="nk d nk-3" onclick="editNk('3')">3</button>
             <button class="nk d btn-0-phone" onclick="editNk('0')">0</button>
-            <button class="nk d btn-000" onclick="editNk000()">000</button>
+            <button class="nk d btn-000" onclick="editNk00()">00</button>
             <button class="nk d btn-0-calc" onclick="editNk('0')">0</button>
             <button class="nk a btn-calc-plus"  onclick="editNkOp('+')">+</button>
             <button class="nk a btn-calc-minus" onclick="editNkOp('-')">−</button>
@@ -1373,13 +1376,14 @@
         <div class="edit-lbl">日付</div>
         <input class="edit-field edit-date" id="edit-date" type="date">
       </div>
+    </div>
 
-      <!-- 削除（フォーム末尾・区切り線で分離） -->
-      <div style="margin-top:8px;padding-top:12px;border-top:.5px solid var(--sep);padding-bottom:8px">
-        <button class="sa-btn sa-danger" style="width:100%" onclick="deleteAndClose()">この取引を削除</button>
-      </div>
+    <div class="edit-actions">
+      <button class="sa-btn sa-danger" onclick="deleteAndClose()">削除</button>
+      <button class="sa-btn sa-primary" onclick="saveEdit()">保存</button>
     </div>
   </div>
+
   <!-- ════ CATEGORY MANAGEMENT ════ -->
   <div class="full-overlay" id="cat-mgmt-overlay">
     <div class="full-header">
@@ -1415,6 +1419,7 @@
       </div>
     </div>
   </div>
+
   <!-- ════ BUDGET EDIT SHEET ════ -->
   <div class="overlay" id="budget-edit-overlay" onclick="closeBudgetEdit(event)">
     <div class="sheet" onclick="event.stopPropagation()">
@@ -1435,6 +1440,7 @@
       </div>
     </div>
   </div>
+
   <!-- ════ CATEGORY DETAIL OVERLAY ════ -->
   <div class="full-overlay" id="cat-detail-overlay">
     <div class="full-header">
@@ -1703,9 +1709,9 @@ function clearAmt() {
   amtStr = ''; calcFirstOperand = null; calcOp = null;
   updateAmt();
 }
-function nk000() {
+function nk00() {
   if (!amtStr) return;
-  const add = Math.min(3, 10 - amtStr.length);
+  const add = Math.min(2, 10 - amtStr.length);
   if (add > 0) { amtStr += '0'.repeat(add); updateAmt(); }
 }
 function nkOp(op) {
@@ -1989,9 +1995,9 @@ function editClearAmt() {
   editAmtStr = ''; editCalcFirstOperand = null; editCalcOp = null;
   updateEditAmt();
 }
-function editNk000() {
+function editNk00() {
   if (!editAmtStr) return;
-  const add = Math.min(3, 10 - editAmtStr.length);
+  const add = Math.min(2, 10 - editAmtStr.length);
   if (add > 0) { editAmtStr += '0'.repeat(add); updateEditAmt(); }
 }
 function editNkOp(op) {
