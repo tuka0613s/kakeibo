@@ -654,18 +654,14 @@
     #screen-input.layout-b .numpad        { order: 7; }
 
     /* Edit Overlay Layout Sync (Body/Frame sync) */
-    .edit-scroll { display: flex; flex-direction: column; }
-    .edit-sec-type { order: 1; }
-    .edit-sec-amt  { order: 2; }
-    .edit-sec-npad { order: 3; }
-    .edit-sec-cat  { order: 4; }
-    .edit-sec-memo { order: 5; }
-    .edit-sec-date { order: 6; }
+    #edit-overlay .edit-sec-type { order: 2; padding: 0 16px; }
+    #edit-overlay .edit-sec-amt  { order: 3; padding: 0 16px; }
+    #edit-overlay .edit-sec-npad { order: 4; }
+    #edit-overlay .edit-scroll   { order: 5; flex: 1; overflow-y: auto; }
+    #edit-overlay .edit-actions  { order: 6; }
 
-    .frame.layout-b .edit-sec-memo { order: 3; }
-    .frame.layout-b .edit-sec-date { order: 4; }
-    .frame.layout-b .edit-sec-cat  { order: 5; }
-    .frame.layout-b .edit-sec-npad { order: 6; }
+    .frame.layout-b #edit-overlay .edit-scroll { order: 4; }
+    .frame.layout-b #edit-overlay .edit-sec-npad { order: 5; }
 
     /* ブラウザモード（非PWA）: Layout B でテンキーが隠れないよう hist-wrap の最小高さを解除 */
     body.browser-mode #screen-input.layout-b .hist-wrap { min-height: 0; }
@@ -1332,7 +1328,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.6.6</div>
+            <div class="si-val">v1.6.8</div>
           </div>
         </div>
       </div>
@@ -1370,48 +1366,49 @@
       <button class="fh-btn" onclick="saveEdit()">保存</button>
     </div>
 
+    <!-- 支出/収入 (直接の子: 固定) -->
+    <div class="edit-sec edit-sec-type">
+      <div class="type-toggle" style="margin:6px 0 0 0">
+        <button class="toggle-btn" id="edit-btn-exp" onclick="setEditType('expense')">支出</button>
+        <button class="toggle-btn" id="edit-btn-inc" onclick="setEditType('income')">収入</button>
+      </div>
+    </div>
+
+    <!-- 金額 (直接の子: 固定) -->
+    <div class="edit-sec edit-sec-amt">
+      <div class="edit-amount-card" style="padding:4px 16px">
+        <span class="edit-yen">¥</span>
+        <span class="edit-amt-display dim" id="edit-amt-disp">0</span>
+      </div>
+    </div>
+
+    <!-- テンキー (直接の子: 位置可変) -->
+    <div class="edit-sec edit-sec-npad">
+      <div class="numpad" style="border-radius:0; padding:2px 10px">
+        <div class="numpad-grid">
+          <button class="nk d nk-7" onclick="editNk('7')">7</button>
+          <button class="nk d nk-8" onclick="editNk('8')">8</button>
+          <button class="nk d nk-9" onclick="editNk('9')">9</button>
+          <button class="nk a nk-back" onclick="editBack()">⌫</button>
+          <button class="nk d nk-4" onclick="editNk('4')">4</button>
+          <button class="nk d nk-5" onclick="editNk('5')">5</button>
+          <button class="nk d nk-6" onclick="editNk('6')">6</button>
+          <button class="nk a nk-clear" onclick="editClearAmt()">C</button>
+          <button class="nk d nk-1" onclick="editNk('1')">1</button>
+          <button class="nk d nk-2" onclick="editNk('2')">2</button>
+          <button class="nk d nk-3" onclick="editNk('3')">3</button>
+          <button class="nk d btn-0-phone" onclick="editNk('0')">0</button>
+          <button class="nk d btn-00" onclick="editNk00()">00</button>
+          <button class="nk d btn-0-calc" onclick="editNk('0')">0</button>
+          <button class="nk a btn-calc-plus"  onclick="editNkOp('+')">+</button>
+          <button class="nk a btn-calc-minus" onclick="editNkOp('-')">−</button>
+          <button class="nk a btn-calc-eq"    onclick="editNkEq()">=</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中間スクロールエリア -->
     <div class="edit-scroll">
-      <!-- 支出/収入 -->
-      <div class="edit-sec edit-sec-type">
-        <div class="type-toggle" style="margin:0 0 0 0">
-          <button class="toggle-btn" id="edit-btn-exp" onclick="setEditType('expense')">支出</button>
-          <button class="toggle-btn" id="edit-btn-inc" onclick="setEditType('income')">収入</button>
-        </div>
-      </div>
-
-      <!-- 金額 -->
-      <div class="edit-sec edit-sec-amt">
-        <div class="edit-amount-card" style="padding:4px 16px">
-          <span class="edit-yen">¥</span>
-          <span class="edit-amt-display dim" id="edit-amt-disp">0</span>
-        </div>
-      </div>
-
-      <!-- テンキー -->
-      <div class="edit-sec edit-sec-npad" style="margin:0 -16px">
-        <div class="numpad" style="border-radius:0; padding:2px 10px">
-          <div class="numpad-grid">
-            <button class="nk d nk-7" onclick="editNk('7')">7</button>
-            <button class="nk d nk-8" onclick="editNk('8')">8</button>
-            <button class="nk d nk-9" onclick="editNk('9')">9</button>
-            <button class="nk a nk-back" onclick="editBack()">⌫</button>
-            <button class="nk d nk-4" onclick="editNk('4')">4</button>
-            <button class="nk d nk-5" onclick="editNk('5')">5</button>
-            <button class="nk d nk-6" onclick="editNk('6')">6</button>
-            <button class="nk a nk-clear" onclick="editClearAmt()">C</button>
-            <button class="nk d nk-1" onclick="editNk('1')">1</button>
-            <button class="nk d nk-2" onclick="editNk('2')">2</button>
-            <button class="nk d nk-3" onclick="editNk('3')">3</button>
-            <button class="nk d btn-0-phone" onclick="editNk('0')">0</button>
-            <button class="nk d btn-00" onclick="editNk00()">00</button>
-            <button class="nk d btn-0-calc" onclick="editNk('0')">0</button>
-            <button class="nk a btn-calc-plus"  onclick="editNkOp('+')">+</button>
-            <button class="nk a btn-calc-minus" onclick="editNkOp('-')">−</button>
-            <button class="nk a btn-calc-eq"    onclick="editNkEq()">=</button>
-          </div>
-        </div>
-      </div>
-
       <!-- カテゴリ -->
       <div class="edit-sec edit-sec-cat">
         <div class="edit-cat-grid" id="edit-cat-grid"></div>

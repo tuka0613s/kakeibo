@@ -17,6 +17,7 @@ A high-speed household account book PWA (Progressive Web App) optimized for rapi
 ## Rule
 - ドキュメントはファイル、仕様変更、設計変更のたびに更新すること
 - gitにコミット前にはドキュメントの更新忘れがないか確認し未更新分を更新し、versionを変更してからコミットすること
+    - version アプリ情報のバージョンで、ユーザが現アプリのバージョンを確認できるようになっている
 - CLAUDE.md,GEMINI.md両方を常に参照すること
 
 ## Building and Running
