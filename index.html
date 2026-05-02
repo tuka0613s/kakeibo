@@ -1874,12 +1874,15 @@ function histRow(t) {
 // ─────────── CATEGORIES ───────────
 function renderCats() {
   const cats = curType === 'expense' ? expCats : incCats;
-  document.getElementById('cat-grid').innerHTML = cats.map(c => `
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = cats.map(c => `
     <div class="cat-item" onclick="register('${c.name}','${c.emoji}')">
       <div class="cat-emoji">${c.emoji}</div>
       <div class="cat-name">${c.name}</div>
     </div>
   `).join('');
+  // 3行(12個)以内の場合はタッチでの微動を防止
+  grid.style.touchAction = cats.length <= 12 ? 'none' : 'pan-y';
 }
 
 // ─────────── CATEGORY MANAGEMENT ───────────
@@ -2099,13 +2102,16 @@ function setEditType(type) {
 
 function renderEditCats() {
   const cats = editTxn.type === 'expense' ? expCats : incCats;
-  document.getElementById('edit-cat-grid').innerHTML = cats.map(c => {
+  const grid = document.getElementById('edit-cat-grid');
+  grid.innerHTML = cats.map(c => {
     const sel = c.name === editSelCat.name ? ' sel' : '';
     return `<div class="cat-item${sel}" onclick="selectEditCat('${c.name}','${c.emoji}')">
       <div class="cat-emoji">${c.emoji}</div>
       <div class="cat-name">${c.name}</div>
     </div>`;
   }).join('');
+  // 2行(8個)以内の場合はタッチでの微動を防止
+  grid.style.touchAction = cats.length <= 8 ? 'none' : 'pan-y';
 }
 
 function selectEditCat(name, emoji) {
