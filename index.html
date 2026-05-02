@@ -180,7 +180,7 @@
 
     .type-toggle {
       display: flex;
-      margin: 8px 20px 0;
+      margin: 6px 20px 0;
       background: var(--sep);
       border-radius: 10px;
       padding: 2px;
@@ -210,7 +210,7 @@
     }
     .amount-yen { font-size: 26px; font-weight: 300; color: var(--text2); }
     .amount-val {
-      font-size: 56px;
+      font-size: 48px;
       font-weight: 200;
       color: var(--text1);
       letter-spacing: -3px;
@@ -219,8 +219,8 @@
     .amount-val.lit { color: var(--primary); }
 
     .memo-hint {
-      margin: 2px 16px 6px;
-      padding: 13px 16px;
+      margin: 1px 16px 4px;
+      padding: 10px 16px;
       background: var(--card);
       border-radius: 13px;
       font-size: 13px;
@@ -235,7 +235,7 @@
       flex: 1;
       overflow-y: auto;
       padding: 0 16px 4px;
-      min-height: 50px;
+      min-height: 30px;
       overscroll-behavior: none;
       -webkit-overflow-scrolling: touch;
     }
@@ -295,7 +295,7 @@
       background: var(--card);
       border-radius: 13px;
       padding: 8px;
-      max-height: 166px;
+      max-height: 222px;
       overflow-y: auto;
     }
     .cat-item {
@@ -653,7 +653,7 @@
     #screen-input.layout-b .cat-wrap      { order: 6; }
     #screen-input.layout-b .numpad        { order: 7; }
 
-    /* Edit Overlay Layout Sync */
+    /* Edit Overlay Layout Sync (Body/Frame sync) */
     .edit-scroll { display: flex; flex-direction: column; }
     .edit-sec-type { order: 1; }
     .edit-sec-amt  { order: 2; }
@@ -662,10 +662,10 @@
     .edit-sec-memo { order: 5; }
     .edit-sec-date { order: 6; }
 
-    .layout-b .edit-sec-memo { order: 3; }
-    .layout-b .edit-sec-date { order: 4; }
-    .layout-b .edit-sec-cat  { order: 5; }
-    .layout-b .edit-sec-npad { order: 6; }
+    .frame.layout-b .edit-sec-memo { order: 3; }
+    .frame.layout-b .edit-sec-date { order: 4; }
+    .frame.layout-b .edit-sec-cat  { order: 5; }
+    .frame.layout-b .edit-sec-npad { order: 6; }
 
     /* ブラウザモード（非PWA）: Layout B でテンキーが隠れないよう hist-wrap の最小高さを解除 */
     body.browser-mode #screen-input.layout-b .hist-wrap { min-height: 0; }
@@ -2868,18 +2868,18 @@ function renderCatDetail() {
 let layoutB = localStorage.getItem('kakebo_layout') === 'B';
 
 function applyLayout() {
-  const app    = document.querySelector('.app');
+  const frame  = document.querySelector('.frame');
   const screen = document.getElementById('screen-input');
   const btn    = document.getElementById('layout-btn');
   const icon   = document.getElementById('layout-icon');
   if (layoutB) {
-    app.classList.add('layout-b');
+    frame.classList.add('layout-b');
     screen.classList.add('layout-b');
     icon.textContent = '📋';
     btn.querySelector('span:last-child').textContent = '下';
     btn.classList.add('active');
   } else {
-    app.classList.remove('layout-b');
+    frame.classList.remove('layout-b');
     screen.classList.remove('layout-b');
     icon.textContent = '⌨';
     btn.querySelector('span:last-child').textContent = '上';
