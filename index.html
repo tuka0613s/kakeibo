@@ -219,9 +219,9 @@
 
     .memo-hint {
       margin: 2px 20px 6px;
-      padding: 7px 12px;
+      padding: 13px 16px;
       background: var(--card);
-      border-radius: 10px;
+      border-radius: 13px;
       font-size: 13px;
       color: var(--text2);
       cursor: pointer;
@@ -821,20 +821,30 @@
       display: grid; grid-template-columns: repeat(4,1fr);
       gap: 6px; background: var(--card);
       border-radius: 13px; padding: 8px;
-      max-height: 152px; overflow-y: auto;
+      max-height: 300px; overflow-y: auto;
     }
     .edit-cat-grid .cat-item { padding: 4px 2px; }
     .cat-item.sel { background: var(--primary); }
     .cat-item.sel .cat-name { color: #fff; }
+.edit-field {
+  width: 100%; border: none;
+  background: var(--card); border-radius: 13px;
+  padding: 13px 16px; font-size: 15px;
+  outline: none; color: var(--text1);
+  font-family: inherit;
+}
+.edit-field::placeholder { color: var(--text2); }
+.edit-date {
+  display: block;
+  -webkit-appearance: none;
+  min-height: 46px;
+}
 
-    .edit-field {
-      width: 100%; border: none;
-      background: var(--card); border-radius: 13px;
-      padding: 13px 16px; font-size: 15px;
-      outline: none; color: var(--text1);
-      font-family: inherit;
+.edit-actions {
+      display: block;
+      -webkit-appearance: none;
+      min-height: 46px;
     }
-    .edit-field::placeholder { color: var(--text2); }
 
     .edit-actions {
       display: flex; gap: 8px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
@@ -2108,8 +2118,8 @@ function renderEditCats() {
       <div class="cat-name">${c.name}</div>
     </div>`;
   }).join('');
-  // 2行(8個)以内の場合はタッチでの微動を防止
-  grid.style.touchAction = cats.length <= 8 ? 'none' : 'pan-y';
+  // 4行(16個)以内の場合はタッチでの微動を防止
+  grid.style.touchAction = cats.length <= 16 ? 'none' : 'pan-y';
 }
 
 function selectEditCat(name, emoji) {
@@ -2874,8 +2884,10 @@ function applyNumpadStyle() {
   document.querySelectorAll('.numpad-grid').forEach(g => {
     g.classList.toggle('calc-layout', numpadCalc);
   });
-  btn.querySelector('span:last-child').textContent = numpadCalc ? '下' : '右';
-  btn.classList.toggle('active', numpadCalc);
+  if (btn) {
+    btn.querySelector('span:last-child').textContent = numpadCalc ? '下' : '右';
+    btn.classList.toggle('active', numpadCalc);
+  }
 }
 
 function toggleNumpadStyle() {
