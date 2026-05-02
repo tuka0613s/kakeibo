@@ -836,7 +836,7 @@
       display: grid; grid-template-columns: repeat(4,1fr);
       gap: 6px; background: var(--card);
       border-radius: 13px; padding: 8px;
-      max-height: 222px; overflow-y: auto;
+      max-height: 182px; overflow-y: auto;
     }
     .edit-cat-grid .cat-item { padding: 4px 2px; }
     .cat-item.sel { background: var(--primary); }
@@ -1332,7 +1332,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.6.4</div>
+            <div class="si-val">v1.6.5</div>
           </div>
         </div>
       </div>
@@ -2133,8 +2133,8 @@ function renderEditCats() {
       <div class="cat-name">${c.name}</div>
     </div>`;
   }).join('');
-  // 4行(16個)以内の場合はタッチでの微動を防止
-  grid.style.touchAction = cats.length <= 16 ? 'none' : 'pan-y';
+  // 3行(12個)以内の場合はタッチでの微動を防止
+  grid.style.touchAction = cats.length <= 12 ? 'none' : 'pan-y';
 }
 
 function selectEditCat(name, emoji) {
