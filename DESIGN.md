@@ -21,7 +21,7 @@
 kakeibo/
 ├── index.html       # アプリ本体（CSS・JS すべて内包）
 ├── manifest.json    # PWA マニフェスト
-├── sw.js            # Service Worker（現バージョン: kakebo-v14）
+├── sw.js            # Service Worker（現バージョン: kakebo-v15）
 ├── icon-192.png     # PWA アイコン ※未生成
 ├── icon-512.png     # PWA アイコン ※未生成
 ├── README.md        # プロジェクト概要・インストール手順
@@ -383,6 +383,7 @@ const SEED_TXNS = (() => {
 | kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
 | kakebo-v8 | iPad 11インチ対応（768〜1366px フルスクリーン）・iPhone 横向きオーバーレイ（半透明blur）・Drive 同期バグ修正（Drive空→自動アップロード・競合シートに件数表示） |
 | kakebo-v9 | Drive「同期」と「バックアップ（保存）」を分離。`gdriveSync()` 追加（updatedAt 比較の双方向同期）。`_applyDriveData()` 共通化。接続直後にタイムスタンプ比較で自動判定。各操作のFBメッセージを状況・件数付きに改善 |
+| kakebo-v15 | 入力画面のメモ欄幅調整、レイアウト設定の編集画面同期、iPhone 17 でのテンキー欠け防止（高さ調整） |
 | kakebo-v14 | 入力画面の日付動的化、カテゴリグリッドのスクロール閾値調整（4行/3行）、メモ/日付欄のデザイン統一、テンキー設定の編集画面同期 |
 | kakebo-v13 | 取引編集画面・スクロールエリアの動作安定化（overscroll-behavior, touch-action） |
 | kakebo-v11 | テンキー 00 統一。取引編集画面のカテゴリ一覧にスクロール導入。アクションボタンをフッターに固定 |
