@@ -1332,7 +1332,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.6.6</div>
+            <div class="si-val">v1.6.8</div>
           </div>
         </div>
       </div>
@@ -1833,8 +1833,11 @@ function saveMemoSheet() {
   closeMemoSheet();
 }
 function closeMemoSheet(e) {
-  if (!e || e.target === document.getElementById('memo-sheet-overlay'))
+  if (!e || e.target === document.getElementById('memo-sheet-overlay')) {
     document.getElementById('memo-sheet-overlay').classList.remove('show');
+    if (document.activeElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+  }
 }
 
 // ─────────── REGISTER ───────────
@@ -1922,6 +1925,8 @@ function openCatMgmt() {
 
 function closeCatMgmt() {
   document.getElementById('cat-mgmt-overlay').classList.remove('show');
+  if (document.activeElement) document.activeElement.blur();
+  window.scrollTo(0, 0);
   renderCats(); // 入力画面のカテゴリを最新に更新
 }
 
@@ -1988,6 +1993,8 @@ function closeCatEdit(e) {
   if (!e || e.target === document.getElementById('cat-edit-overlay')) {
     document.getElementById('cat-edit-overlay').classList.remove('show');
     catEditId = null;
+    if (document.activeElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
   }
 }
 
@@ -2107,6 +2114,8 @@ function openSheet(id) {          // 履歴・日別詳細から呼ばれる
 function closeEditOverlay() {
   document.getElementById('edit-overlay').classList.remove('show');
   editTxn = null; editSelCat = null; editAmtStr = '';
+  if (document.activeElement) document.activeElement.blur();
+  window.scrollTo(0, 0);
 }
 
 function setEditType(type) {
@@ -2286,8 +2295,11 @@ function openBudgetEdit(mode) {
 }
 
 function closeBudgetEdit(e) {
-  if (!e || e.target === document.getElementById('budget-edit-overlay'))
+  if (!e || e.target === document.getElementById('budget-edit-overlay')) {
     document.getElementById('budget-edit-overlay').classList.remove('show');
+    if (document.activeElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+  }
 }
 
 function saveBudgetEdit() {
@@ -2466,8 +2478,11 @@ function openCSVSheet() {
 }
 
 function closeCSVSheet(e) {
-  if (!e || e.target === document.getElementById('csv-export-overlay'))
+  if (!e || e.target === document.getElementById('csv-export-overlay')) {
     document.getElementById('csv-export-overlay').classList.remove('show');
+    if (document.activeElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+  }
 }
 
 function buildCSV(list) {
@@ -2617,8 +2632,11 @@ function _confirmOK() {
   if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
 }
 function closeConfirmSheet(e) {
-  if (!e || e.target === document.getElementById('confirm-overlay'))
+  if (!e || e.target === document.getElementById('confirm-overlay')) {
     document.getElementById('confirm-overlay').classList.remove('show');
+    if (document.activeElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+  }
 }
 
 // ─────────── FORCE UPDATE ───────────
@@ -2809,6 +2827,8 @@ function setCatSort(sort) {
 
 function closeCatDetail() {
   document.getElementById('cat-detail-overlay').classList.remove('show');
+  if (document.activeElement) document.activeElement.blur();
+  window.scrollTo(0, 0);
 }
 
 function renderCatDetail() {
@@ -3279,6 +3299,8 @@ function openGdriveSheet() {
 function closeGdriveSheet(e) {
   if (e && e.target !== document.getElementById('gdrive-sheet-overlay')) return;
   document.getElementById('gdrive-sheet-overlay').classList.remove('show');
+  if (document.activeElement) document.activeElement.blur();
+  window.scrollTo(0, 0);
 }
 
 function renderGdriveSheet() {

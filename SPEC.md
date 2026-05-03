@@ -169,7 +169,8 @@
 | キーボード | カスタムテンキー使用・iOS デフォルトキーボードは出さない（メモのみ text input） | ✅ |
 | レイアウト | iPhone は全画面・デスクトップ（1367px+）はモックフレーム・iPad（768〜1366px）はモックフレームなしフルスクリーン（横向きは「縦向きにしてください」オーバーレイ表示） | ✅ |
 | Safe Area | Dynamic Island / ホームインジケーター対応 | ✅ |
-| スクロール | `overscroll-behavior: none` でバウンスと親画面連動を防止 | ✅ |
+| スクロール | `overscroll-behavior: none` でバウンス防止。オーバーレイを閉じる際に `window.scrollTo(0, 0)` でビューポートをリセット | ✅ |
+| キーボードズレ | モーダルを閉じる際に `activeElement.blur()` を実行し、キーボードによる画面のズレを解消 | ✅ |
 | 固定パーツ | ヘッダー・フッターに `touch-action: none` を適用しズレを防止 | ✅ |
 | ダブルタップ拡大 | `touch-action: manipulation` で全体無効化 | ✅ |
 | 右端スワイプ誤ナビ | `history.pushState` で SPA 内に留める | ✅ |
