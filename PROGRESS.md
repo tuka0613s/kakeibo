@@ -130,6 +130,12 @@
   - これにより iOS Safari がキーボード表示時にページをスクロールすることを完全に防止。
   - バージョンを `v1.7.1` に更新。キャッシュを `kakebo-v22` に更新。
 
+- **バグ修正（iOS Safari 自動ズームによるスクロール問題の根本解決）(v1.7.2)**:
+  - iOS Safari は `font-size` が 16px 未満の `input` にフォーカスすると自動ズームする。ズーム後にキーボードが閉じても拡大が残り、画面がスクロール可能になっていた。
+  - `<meta viewport>` に `maximum-scale=1.0, user-scalable=no` を追加してピンチズームと自動ズームを完全禁止。
+  - `.edit-field` の `font-size` を `15px → 16px` に変更（iOS のズームトリガーを回避）。
+  - バージョンを `v1.7.2` に更新。キャッシュを `kakebo-v23` に更新。
+
 - **ドキュメント整理：AGENTS.md 作成**:
   - `CLAUDE.md` と `GEMINI.md` の内容を `AGENTS.md`（AI エージェント共通フォーマット）に統合。
   - `CLAUDE.md` / `GEMINI.md` は `AGENTS.md` へのリダイレクトのみに簡略化。
