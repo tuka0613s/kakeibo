@@ -1332,7 +1332,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.6.8</div>
+            <div class="si-val">v1.6.9</div>
           </div>
         </div>
       </div>
@@ -1591,6 +1591,13 @@
 
 <script>
 // ─────────── UTILS (先に定義) ───────────
+function resetViewport() {
+  if (document.activeElement) document.activeElement.blur();
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+  }, 80);
+}
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1835,8 +1842,7 @@ function saveMemoSheet() {
 function closeMemoSheet(e) {
   if (!e || e.target === document.getElementById('memo-sheet-overlay')) {
     document.getElementById('memo-sheet-overlay').classList.remove('show');
-    if (document.activeElement) document.activeElement.blur();
-    window.scrollTo(0, 0);
+    resetViewport();
   }
 }
 
@@ -1925,8 +1931,7 @@ function openCatMgmt() {
 
 function closeCatMgmt() {
   document.getElementById('cat-mgmt-overlay').classList.remove('show');
-  if (document.activeElement) document.activeElement.blur();
-  window.scrollTo(0, 0);
+  resetViewport();
   renderCats(); // 入力画面のカテゴリを最新に更新
 }
 
@@ -1993,8 +1998,7 @@ function closeCatEdit(e) {
   if (!e || e.target === document.getElementById('cat-edit-overlay')) {
     document.getElementById('cat-edit-overlay').classList.remove('show');
     catEditId = null;
-    if (document.activeElement) document.activeElement.blur();
-    window.scrollTo(0, 0);
+    resetViewport();
   }
 }
 
@@ -2114,8 +2118,7 @@ function openSheet(id) {          // 履歴・日別詳細から呼ばれる
 function closeEditOverlay() {
   document.getElementById('edit-overlay').classList.remove('show');
   editTxn = null; editSelCat = null; editAmtStr = '';
-  if (document.activeElement) document.activeElement.blur();
-  window.scrollTo(0, 0);
+  resetViewport();
 }
 
 function setEditType(type) {
@@ -2297,8 +2300,7 @@ function openBudgetEdit(mode) {
 function closeBudgetEdit(e) {
   if (!e || e.target === document.getElementById('budget-edit-overlay')) {
     document.getElementById('budget-edit-overlay').classList.remove('show');
-    if (document.activeElement) document.activeElement.blur();
-    window.scrollTo(0, 0);
+    resetViewport();
   }
 }
 
@@ -2480,8 +2482,7 @@ function openCSVSheet() {
 function closeCSVSheet(e) {
   if (!e || e.target === document.getElementById('csv-export-overlay')) {
     document.getElementById('csv-export-overlay').classList.remove('show');
-    if (document.activeElement) document.activeElement.blur();
-    window.scrollTo(0, 0);
+    resetViewport();
   }
 }
 
@@ -2634,8 +2635,7 @@ function _confirmOK() {
 function closeConfirmSheet(e) {
   if (!e || e.target === document.getElementById('confirm-overlay')) {
     document.getElementById('confirm-overlay').classList.remove('show');
-    if (document.activeElement) document.activeElement.blur();
-    window.scrollTo(0, 0);
+    resetViewport();
   }
 }
 
@@ -2827,8 +2827,7 @@ function setCatSort(sort) {
 
 function closeCatDetail() {
   document.getElementById('cat-detail-overlay').classList.remove('show');
-  if (document.activeElement) document.activeElement.blur();
-  window.scrollTo(0, 0);
+  resetViewport();
 }
 
 function renderCatDetail() {
@@ -3299,8 +3298,7 @@ function openGdriveSheet() {
 function closeGdriveSheet(e) {
   if (e && e.target !== document.getElementById('gdrive-sheet-overlay')) return;
   document.getElementById('gdrive-sheet-overlay').classList.remove('show');
-  if (document.activeElement) document.activeElement.blur();
-  window.scrollTo(0, 0);
+  resetViewport();
 }
 
 function renderGdriveSheet() {

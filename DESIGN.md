@@ -219,6 +219,7 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 
 | 関数 | 役割 |
 |---|---|
+| `resetViewport()` | `activeElement.blur()` を実行後、80ms待機してから `window.scrollTo(0, 0)` を実行し、キーボード収縮後のビューポートをリセットする |
 | `todayKey()` | `YYYY-MM-DD` 形式の今日日付を返す |
 | `loadTxns()` / `saveTxns()` | 取引データの読み書き（初期値は空配列） |
 | `loadCats(type)` / `saveCats()` | カテゴリの読み書き |
