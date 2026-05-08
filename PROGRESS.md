@@ -42,7 +42,7 @@
 | タスク | 状態 | 備考 |
 |---|---|---|
 | manifest.json | ✅ | start_url を相対パスに修正済み |
-| Service Worker（オフラインキャッシュ） | ✅ | Cache First・v10 |
+| Service Worker（オフラインキャッシュ） | ✅ | Cache First・v24 |
 | localStorage 永続化 | ✅ | txns・nextId・layout・cats・budget・initialBalance |
 | レイアウト A/B 切り替え | ✅ | CSS order プロパティ・設定保存あり |
 | 今日の日付で登録 | ✅ | todayKey() で動的生成 |
@@ -85,7 +85,7 @@
 | iPhone 実機テスト | ✅ | GitHub Pages で動作確認済み |
 | モバイル全画面表示確認 | ✅ | フレーム・偽ステータスバーが消えることを確認 |
 | Safe Area 対応確認 | ✅ | ボトムナビ対応済み |
-| メモ入力のカスタムシート化 | ✅ | prompt() 廃止・ボトムシート化・iOS キーボード自動表示 |
+| メモ入力のインライン化 | ✅ | ボトムシートを廃止しインライン input に統一。iOS での安定性向上 |
 | Layout B ブラウザモード対応 | ✅ | 非PWA時に hist-wrap min-height を解除しテンキーを常時表示 |
 | ボトムナビのアクティブ表示 | ✅ | インジケーターライン・アイコン拡大・ラベル太字 |
 | カレンダー即時反映 | ✅ | switchTab 時に再描画・calYear/calMonth 動的初期化 |
