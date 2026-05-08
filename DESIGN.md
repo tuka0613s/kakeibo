@@ -110,7 +110,8 @@ kakeibo/
     │   ├── .numpad           (order: 4)
     │   ├── .cat-wrap         (order: 5)
     │   │   └── .cat-grid (max-height: 222px, overflow-y: auto)
-    │   ├── .memo-hint        (order: 6)
+    │   ├── .memo-input-wrap  (order: 6)
+    │   │   └── #memo-input   (inline text input)
     │   └── .hist-wrap        (order: 7)  ← スクロール
     ├── #screen-calendar  # カレンダー画面
     │   ├── .cal-header
@@ -136,7 +137,7 @@ kakeibo/
 ├── #budget-edit-overlay           予算・初期残高入力（3モード共用）
 ├── #csv-export-overlay            CSV エクスポート / インポート選択シート
 ├── #gdrive-sheet-overlay          Google Drive 同期シート（接続・同期・読み込み）
-├── #memo-sheet-overlay            メモ入力シート（prompt() の代替）
+
 └── #confirm-overlay               汎用確認シート（sa-danger ボタン＋コールバック）
 ```
 
@@ -146,7 +147,7 @@ kakeibo/
 
 ```css
 /* Layout B 時の上書き */
-#screen-input.layout-b .memo-hint  { order: 4; }
+#screen-input.layout-b .memo-input-wrap { order: 4; }
 #screen-input.layout-b .hist-wrap  { order: 5; }
 #screen-input.layout-b .cat-wrap   { order: 6; }
 #screen-input.layout-b .numpad     { order: 7; }
@@ -280,8 +281,7 @@ if (!(navigator.standalone || matchMedia('(display-mode: standalone)').matches))
 | `importCSV(event)` | 選択 CSV を読み込み・パースして txns に追記 |
 | `parseCSVLine(line)` | CSV 1行をクォート対応でフィールド分割 |
 | `openCatMgmt()` | カテゴリ管理画面を開く |
-| `editMemo()` | メモシートを開く（`#memo-sheet-overlay`）・`input.focus()` で即キーボード表示 |
-| `saveMemoSheet()` | メモシートの値を `curMemo` に反映して閉じる |
+
 | `setPeriod(btn, period)` | 統計の月次/年次切り替え。ナビ表示・全グラフ更新 |
 | `navigateStatsMonth(dir)` | 統計の選択月を前後に移動（年跨ぎ対応） |
 | `navigateStatsYear(dir)` | 統計の選択年を前後に移動 |
@@ -376,6 +376,11 @@ const SEED_TXNS = (() => {
 
 | バージョン | 変更内容 |
 |---|---|
+| kakebo-v24 | 入力画面のメモ入力をボトムシートからインライン input に統一。iOS 安定化 |
+| kakebo-v23 | iOS Safari 自動ズーム防止（font-size 16px 化）、viewport 固定、キャッシュバンプ |
+| kakebo-v22 | iOS Safari キーボード表示時の画面スクロール防止（fixed 適用） |
+| kakebo-v21 | メモ入力ボトムシートの touch-action 制御 |
+| kakebo-v20 | resetViewport() 導入、モーダルを閉じる際のビューポートリセット強化 |
 | kakebo-v1 | 初期版（絶対パス） |
 | kakebo-v2 | GitHub Pages 対応（相対パスに変更） |
 | kakebo-v3 | モバイル全画面対応に伴うキャッシュ更新 |

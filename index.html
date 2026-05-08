@@ -228,17 +228,13 @@
     }
     .amount-val.lit { color: var(--primary); }
 
-    .memo-hint {
+    .memo-input-wrap {
       margin: 1px 16px 4px;
-      padding: 10px 16px;
-      background: var(--card);
-      border-radius: 13px;
-      font-size: 13px;
-      color: var(--text2);
-      cursor: pointer;
       flex-shrink: 0;
     }
-    .memo-hint.filled { color: var(--text1); }
+    .memo-input-wrap .edit-field {
+      font-size: 13px;
+    }
 
     /* history */
     .hist-wrap {
@@ -652,13 +648,13 @@
     #screen-input .amount-wrap   { order: 3; }
     #screen-input .numpad        { order: 4; }
     #screen-input .cat-wrap      { order: 5; }
-    #screen-input .memo-hint     { order: 6; }
+    #screen-input .memo-input-wrap { order: 6; }
     #screen-input .hist-wrap     { order: 7; }
 
     /* Layout B: 予算バー→金額→メモ→履歴→カテゴリ→テンキー */
     #screen-input.layout-b .budget-bar-wrap { order: 2; }
     #screen-input.layout-b .amount-wrap   { order: 3; }
-    #screen-input.layout-b .memo-hint     { order: 4; }
+    #screen-input.layout-b .memo-input-wrap { order: 4; }
     #screen-input.layout-b .hist-wrap     { order: 5; }
     #screen-input.layout-b .cat-wrap      { order: 6; }
     #screen-input.layout-b .numpad        { order: 7; }
@@ -857,6 +853,9 @@
   padding: 13px 16px; font-size: 16px;
   outline: none; color: var(--text1);
   font-family: inherit;
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: manipulation;
 }
 .edit-field::placeholder { color: var(--text2); }
 .edit-date {
@@ -1124,7 +1123,11 @@
       </div>
 
       <!-- 4. メモ -->
-      <div class="memo-hint" id="memo-hint" onclick="editMemo()">メモを追加...</div>
+      <div class="memo-input-wrap">
+        <input class="edit-field" id="memo-input"
+          type="text" placeholder="メモを追加..." maxlength="50"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
 
       <!-- 5. 履歴（スクロール） -->
       <div class="hist-wrap">
@@ -1344,7 +1347,7 @@
           <div class="si">
             <div class="si-icon" style="background:#F2F2F7">🚀</div>
             <div class="si-lbl">爆速家計簿</div>
-            <div class="si-val">v1.7.2</div>
+            <div class="si-val">v1.7.3</div>
           </div>
         </div>
       </div>
@@ -1561,21 +1564,7 @@
     </div>
   </div>
 
-  <!-- ════ MEMO INPUT SHEET ════ -->
-  <div class="overlay" id="memo-sheet-overlay" onclick="closeMemoSheet(event)">
-    <div class="sheet" onclick="event.stopPropagation()">
-      <div class="sheet-handle"></div>
-      <div class="sheet-title">メモを追加</div>
-      <input class="edit-field" id="memo-sheet-input"
-        type="text" placeholder="メモ（省略可）" maxlength="50"
-        style="margin-bottom:16px"
-        onkeydown="if(event.key==='Enter')saveMemoSheet()">
-      <div class="sheet-actions">
-        <button class="sa-btn sa-primary" onclick="saveMemoSheet()">OK</button>
-        <button class="sa-btn sa-cancel"  onclick="closeMemoSheet()">キャンセル</button>
-      </div>
-    </div>
-  </div>
+
 
   <!-- ════ GOOGLE DRIVE SHEET ════ -->
   <div class="overlay" id="gdrive-sheet-overlay" onclick="closeGdriveSheet(event)">
@@ -1714,7 +1703,7 @@ let curType    = 'expense';
 let amtStr     = '';
 let calcFirstOperand = null;
 let calcOp     = null;
-let curMemo    = '';
+
 let selId      = null;
 const _now     = new Date();
 let calYear    = _now.getFullYear();
@@ -1837,26 +1826,7 @@ function needCat() {
   toast('↑ カテゴリをタップして登録');
 }
 
-// ─────────── MEMO ───────────
-function editMemo() {
-  const input = document.getElementById('memo-sheet-input');
-  input.value = curMemo;
-  document.getElementById('memo-sheet-overlay').classList.add('show');
-  input.focus();
-}
-function saveMemoSheet() {
-  curMemo = document.getElementById('memo-sheet-input').value;
-  const h = document.getElementById('memo-hint');
-  h.textContent = curMemo || 'メモを追加...';
-  h.className   = 'memo-hint' + (curMemo ? ' filled' : '');
-  closeMemoSheet();
-}
-function closeMemoSheet(e) {
-  if (!e || e.target === document.getElementById('memo-sheet-overlay')) {
-    document.getElementById('memo-sheet-overlay').classList.remove('show');
-    resetViewport();
-  }
-}
+
 
 // ─────────── REGISTER ───────────
 function register(name, emoji) {
@@ -1864,17 +1834,19 @@ function register(name, emoji) {
   const amt = parseFloat(amtStr);
   if (!amtStr || amt === 0) { toast('金額を入力してください'); return; }
 
+  const memoInput = document.getElementById('memo-input');
+  const memo = memoInput ? memoInput.value.trim() : '';
+
   txns.unshift({
     id: nextId++, type: curType,
     cat: name, emoji, amt,
-    date: todayKey(), memo: curMemo,
+    date: todayKey(), memo,
   });
   saveTxns(); saveNextId();
 
-  amtStr = ''; curMemo = '';
+  amtStr = '';
   updateAmt();
-  const h = document.getElementById('memo-hint');
-  h.textContent = 'メモを追加...'; h.className = 'memo-hint';
+  if (memoInput) memoInput.value = '';
 
   renderHist();
   renderBudgetBar();

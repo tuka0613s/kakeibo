@@ -29,7 +29,7 @@
 | カテゴリタップ即登録 | ✅ | |
 | 直近履歴表示・修正・削除 | ✅ | 1行サマリー・全画面編集 |
 | 支出/収入切替 | ✅ | |
-| メモ入力 | ✅ | ボトムシート化（prompt() 廃止） |
+| メモ入力 | ✅ | インライン input に統一（ボトムシートから変更、iOS 安定化） |
 | カレンダー月表示 | ✅ | |
 | カレンダー月次サマリー | ✅ | 収入/支出/合計/繰越/残高 |
 | 統計画面 | ✅ | 棒グラフ・カテゴリバー・貯蓄率 |
@@ -117,7 +117,17 @@
 
 ## 作業ログ
 
-### 2026-05-05
+### 2026-05-08
+- **バグ修正（入力画面メモ入力をインライン化） (v1.7.3)**:
+  - 入力画面のメモ入力が「ボトムシートを開く」方式だったため、iPhone でレイアウトが崩れることがあった。
+  - 取引修正画面（edit-overlay）のメモ入力は `<input type="text">` をインラインに配置する方式で安定動作していたため、同じ方式に統一。
+  - `memo-hint` div（タップ → シート表示）を `<input class="edit-field" id="memo-input">` に置き換え。
+  - `memo-sheet-overlay` HTML・`editMemo()` / `saveMemoSheet()` / `closeMemoSheet()` 関数・`curMemo` 変数を削除。
+  - `register()` 関数が `curMemo` 変数の代わりに `#memo-input` の value を直接読むよう変更。
+  - `edit-field` CSS に `user-select: text; -webkit-user-select: text; touch-action: manipulation` を追加（body の `user-select: none` による iOS 入力干渉を回避）。
+  - バージョンを `v1.7.3` に更新。キャッシュを `kakebo-v24` に更新。
+
+
 - **バグ修正（入力画面：メモ入力後の画面タッチ移動を防止） (v1.7.0)**:
   - メモ入力ボトムシート（`.overlay` / `.sheet`）に `touch-action: none` を追加。
   - これにより、メモ入力シート表示中に背景の入力画面がタッチで動いてしまう問題を修正。
