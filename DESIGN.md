@@ -25,7 +25,7 @@ kakeibo/
 ├── icon-192.png     # PWA アイコン ※未生成
 ├── icon-512.png     # PWA アイコン ※未生成
 ├── README.md        # プロジェクト概要・インストール手順
-├── CLAUDE.md        # Claude への開発指示（このプロジェクト固有ルール）
+├── AGENTS.md        # AI エージェントへの指示（CLAUDE.md/GEMINI.mdを統合）
 ├── SPEC.md          # 機能仕様書
 ├── DESIGN.md        # 技術設計書（本ファイル）
 └── PROGRESS.md      # 開発進捗
