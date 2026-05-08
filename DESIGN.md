@@ -21,7 +21,7 @@
 kakeibo/
 ├── index.html       # アプリ本体（CSS・JS すべて内包）
 ├── manifest.json    # PWA マニフェスト
-├── sw.js            # Service Worker（現バージョン: kakebo-v15）
+├── sw.js            # Service Worker（現バージョン: kakebo-v24）
 ├── icon-192.png     # PWA アイコン ※未生成
 ├── icon-512.png     # PWA アイコン ※未生成
 ├── README.md        # プロジェクト概要・インストール手順
@@ -381,20 +381,21 @@ const SEED_TXNS = (() => {
 | kakebo-v22 | iOS Safari キーボード表示時の画面スクロール防止（fixed 適用） |
 | kakebo-v21 | メモ入力ボトムシートの touch-action 制御 |
 | kakebo-v20 | resetViewport() 導入、モーダルを閉じる際のビューポートリセット強化 |
-| kakebo-v1 | 初期版（絶対パス） |
-| kakebo-v2 | GitHub Pages 対応（相対パスに変更） |
-| kakebo-v3 | モバイル全画面対応に伴うキャッシュ更新 |
-| kakebo-v4 | 強制更新機能追加・各種バグ修正に伴うキャッシュ更新 |
-| kakebo-v5 | 統計ナビ大型化・CSVインポート・カテゴリ詳細ソート・未実装メニュー無効化 |
-| kakebo-v6 | テンキー0キー位置切替・000・演算キー（−/+/=）・ダブルタップ拡大防止・右端スワイプ防止 |
-| kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
-| kakebo-v8 | iPad 11インチ対応（768〜1366px フルスクリーン）・iPhone 横向きオーバーレイ（半透明blur）・Drive 同期バグ修正（Drive空→自動アップロード・競合シートに件数表示） |
-| kakebo-v9 | Drive「同期」と「バックアップ（保存）」を分離。`gdriveSync()` 追加（updatedAt 比較の双方向同期）。`_applyDriveData()` 共通化。接続直後にタイムスタンプ比較で自動判定。各操作のFBメッセージを状況・件数付きに改善 |
 | kakebo-v15 | 入力画面のメモ欄幅調整、レイアウト設定の編集画面同期、iPhone 17 でのテンキー欠け防止（高さ調整） |
 | kakebo-v14 | 入力画面の日付動的化、カテゴリグリッドのスクロール閾値調整（4行/3行）、メモ/日付欄のデザイン統一、テンキー設定の編集画面同期 |
 | kakebo-v13 | 取引編集画面・スクロールエリアの動作安定化（overscroll-behavior, touch-action） |
+| kakebo-v12 | (履歴なし) |
 | kakebo-v11 | テンキー 00 統一。取引編集画面のカテゴリ一覧にスクロール導入。アクションボタンをフッターに固定 |
 | kakebo-v10 | テンキー 000 → 00 変更。取引編集 UI 整理。画面ズレ防止 CSS 追加 |
+| kakebo-v9 | Drive「同期」と「バックアップ（保存）」を分離。`gdriveSync()` 追加。`_applyDriveData()` 共通化 |
+| kakebo-v8 | iPad 11インチ対応（フルスクリーン）・iPhone 横向きオーバーレイ・Drive 同期バグ修正 |
+| kakebo-v7 | Google Drive 同期機能追加（GIS Token Client・appDataFolder） |
+| kakebo-v6 | テンキー0キー位置切替・00・演算キー・ダブルタップ拡大防止・右端スワイプ防止 |
+| kakebo-v5 | 統計ナビ大型化・CSVインポート・カテゴリ詳細ソート・未実装メニュー無効化 |
+| kakebo-v4 | 強制更新機能追加・各種バグ修正に伴うキャッシュ更新 |
+| kakebo-v3 | モバイル全画面対応に伴うキャッシュ更新 |
+| kakebo-v2 | GitHub Pages 対応（相対パスに変更） |
+| kakebo-v1 | 初期版（絶対パス） |
 
 キャッシュ戦略：Cache First（キャッシュあれば返す・なければネットワーク）  
 更新時：`CACHE` 定数のバージョンを上げると古いキャッシュを自動削除。  
